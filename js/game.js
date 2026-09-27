@@ -71,6 +71,12 @@ function render(){
   document.querySelector("#turnPlayer").textContent=turnName;
   const turnAreaLabel=document.querySelector("#turnAreaLabel");
   if(turnAreaLabel)turnAreaLabel.textContent=turnName+"のターン";
+  const discardWarning=document.querySelector("#discardWarning");
+  if(discardWarning){
+    const pending=state.pendingDiscardPlayer;
+    discardWarning.hidden=pending===null;
+    if(pending!==null)discardWarning.textContent=state.players[pending].name+"：ドロー前に手札を1枚捨ててください（カードをクリック）";
+  }
   selection();
 }
 function zone(p,z,a){
@@ -211,21 +217,23 @@ function drawCards(n,p=1){
   for(let i=0;i<n;i++)x.hand.push(x.deck.shift());
   state.selected=null;render();
 }
+function ensureDiscardWarning(){
+  if(document.querySelector("#discardWarning"))return;
+  const e=document.createElement("div");
+  e.id="discardWarning";
+  e.hidden=true;
+  e.style.cssText="position:fixed;top:12px;left:50%;transform:translateX(-50%);z-index:9999;background:#8b0000;color:#fff;padding:10px 18px;border:2px solid #f33;border-radius:6px;font-weight:700;pointer-events:none;box-shadow:0 2px 8px rgba(0,0,0,.45);";
+  document.body.appendChild(e);
+}
 function startTurn(p){
   const x=state.players[p];
   x.monsters.forEach(m=>m.tapped=false);
   x.energy.forEach(e=>e.tapped=false);
   if(x.deck.length&&x.hand.length>=MAX.hand){
-    const ok=confirm(x.name+"の手札が上限です。ドロー前に手札を1枚捨てますか？");
-    if(!ok){
-      log(x.name+"のドローをキャンセルしました");
-      render();
-      return;
-    }
     state.pendingDiscardPlayer=p;
     state.selected=null;
     render();
-    log(x.name+"はドロー前に捨てるカードを手札から1枚選択してください");
+    log(x.name+"はドロー前に手札を1枚捨てる必要があります。手札のカードをクリックしてください");
     return;
   }
   if(x.deck.length&&x.hand.length<MAX.hand)drawCards(1,p);
@@ -367,6 +375,7 @@ function setup(){
   document.querySelector("#reset").onclick=()=>{if(confirm("自分の盤面をリセットしますか？")){const n=state.players[1].name;const deckList=(state.savedDeck||[]).slice();const p=newPlayer(n,"p1");const pool=shuffle((deckList.length?deckList:p.deckList).slice());p.deckList=pool.slice();p.hand=pool.slice(0,7).map((name,i)=>newCard(name,"p1h"+i));p.deck=pool.slice(7).map((name,i)=>newCard(name,"p1d"+i));state.players[1]=p;state.selected=null;render();log("自分の盤面をリセットし、デッキをシャッフルして7枚ドローしました")}};
 }
 async function start(){
+  ensureDiscardWarning();
   const r=await fetch(CARD_NAMES_URL);
   cardNames=(await r.text()).split(/\r?\n/).map(s=>s.trim()).filter(Boolean);
   state.players={1:newPlayer("プレイヤー1","p1"),2:newPlayer("プレイヤー2","p2")};
