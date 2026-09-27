@@ -79,6 +79,11 @@ function connectGameServer(){
           if(message.type==="player_joined")log("対戦相手が参加しました");
           else log("プレイヤー名を更新しました");
         }
+        else if(message.type==="first_player_set"){
+          state.turnPlayer=message.turnPlayer===onlinePlayerId?1:2;
+          render();
+          log("先攻: "+state.players[state.turnPlayer].name);
+        }
         else if(message.type==="turn_changed"){
           state.turnPlayer=message.turnPlayer===onlinePlayerId?1:2;
           const currentPlayer=message.previousTurnPlayer===onlinePlayerId?1:2;
