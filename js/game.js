@@ -140,8 +140,7 @@ function selection(){
   if(s.z==="monsters"||s.z==="energy"){add("タップ / アンタップ",()=>{c.tapped=!c.tapped;state.selected={p:s.p,z:s.z,id:s.id};render()});}
   if(s.z==="energy"){const energySpacer=document.createElement("div");energySpacer.style.height="12px";document.querySelector("#ops").appendChild(energySpacer);}
   if(s.z==="monsters"){
-    add("100ダメージ",()=>{c.damage+=100;render()});
-    add("100回復",()=>{c.recovery=Math.min(c.damage,c.recovery+100);render()});
+    add("ダメージ / 回復",()=>openMonsterAdjust(c));
     addCounterControls(op,c,"counters");
   }
   if(s.z==="field"){
@@ -154,6 +153,7 @@ function selection(){
   if(s.z==="monsters")destinations.splice(3,2);
   for(const[z,label]of destinations)if(z!==s.z&&!(s.z==="monsters"&&z==="facedown"))add(label,()=>move(z));
 }
+function openMonsterAdjust(c){const modal=document.querySelector("#monsterAdjustModal"),input=document.querySelector("#monsterAdjustInput");modal.hidden=false;input.value="";input.focus();const close=()=>{modal.hidden=true};const apply=(action)=>{const raw=input.value.trim();if(!raw){close();return}const n=Number(raw);if(!Number.isInteger(n)){log("ダメージ／回復の変更をキャンセルしました");close();return}const amount=Math.abs(n);if(action==="cancel"){close();return}if(action==="damage"){c.damage+=amount}if(action==="heal"){c.recovery=Math.min(c.damage,c.recovery+amount)}if(action==="change"){c.modification=amount-c.recovery+c.damage}state.selected={p:1,z:"monsters",id:c.id};render();close()};modal.querySelectorAll("[data-monster-action]").forEach(b=>b.onclick=()=>apply(b.dataset.monsterAction));input.onkeydown=ev=>{if(ev.key!=="Enter")return;ev.preventDefault();const raw=input.value.trim();if(!raw)return;const n=Number(raw);if(!Number.isInteger(n)){log("ダメージ／回復の変更をキャンセルしました");close();return}apply(n>0&&raw.startsWith("+")?"heal":"damage")};}
 function add(t,fn){const b=document.createElement("button");b.textContent=t;b.onclick=fn;document.querySelector("#ops").appendChild(b)}
 function addCounterControls(parent,target,key){const row=document.createElement("div");row.className="counter-actions";const plus=document.createElement("button");plus.textContent="カウンター +1";plus.onclick=()=>{target[key]=(target[key]||0)+1;render()};const minus=document.createElement("button");minus.textContent="カウンター -1";minus.onclick=()=>{if((target[key]||0)===0)return log("カウンター減少をキャンセル");target[key]--;render()};row.append(plus,minus);parent.appendChild(row)}
 function openDeckViewer(){state.deckInspectId=null;renderDeckViewer();const v=document.querySelector("#deckViewerLog"),l=document.querySelector("#log");if(v&&l){v.innerHTML=l.innerHTML;v.scrollTop=v.scrollHeight}document.querySelector("#deckViewer").hidden=false}
