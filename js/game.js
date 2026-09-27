@@ -165,15 +165,15 @@ function closeDeckViewer(){state.deckInspectId=null;document.querySelector("#dec
 function renderDeckViewer(){
   const list=document.querySelector("#deckViewerList"),actions=document.querySelector("#deckViewerActions"),preview=document.querySelector("#deckViewerPreview");
   if(!list||!actions||!preview)return;
-  const x=state.players[1],deck=x.deck||[];
+  const x=state.players[1],deck=x.deck||[],displayDeck=[...deck].sort((a,b)=>cardNames.indexOf(a.name)-cardNames.indexOf(b.name));
   list.innerHTML="";actions.innerHTML="";preview.innerHTML="";
   if(!deck.length){list.innerHTML='<div class="deck-viewer-empty">山札がありません</div>';preview.textContent="カードを選択";return}
-  deck.forEach(c=>{
+  displayDeck.forEach(c=>{
     const e=document.createElement("div");e.className="deck-viewer-card"+(state.deckInspectId===c.id?" selected":"");
     const img=document.createElement("img");img.src=imageUrl(c.name);img.alt=c.name;img.loading="lazy";img.onerror=()=>{img.replaceWith(document.createTextNode(c.name))};e.appendChild(img);
     e.onclick=()=>{state.deckInspectId=c.id;renderDeckViewer()};list.appendChild(e);
   });
-  const c=deck.find(v=>v.id===state.deckInspectId);
+  const c=displayDeck.find(v=>v.id===state.deckInspectId);
   if(!c){preview.textContent="カードを選択";return}
   const img=document.createElement("img");img.src=imageUrl(c.name);img.alt=c.name;img.onerror=()=>{img.replaceWith(document.createTextNode(c.name))};preview.appendChild(img);
   const name=document.createElement("div");name.className="deck-viewer-name";name.textContent=c.name;preview.appendChild(name);
