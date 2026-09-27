@@ -32,7 +32,6 @@ function applyPublicState(playerId,publicState){
   const deckCount=Number.isInteger(publicState.deckCount)&&publicState.deckCount>=0?publicState.deckCount:0;
   x.deck=Array.from({length:deckCount},(_,i)=>newCard("",playerId+"d"+i));
   x.facedown=Array.from({length:Math.max(0,Number(publicState.facedownCount)||0)},(_,i)=>{const card=newCard("",playerId+"f"+i);card.faceUp=false;return card});
-  x.hand=[];
 }
 
 function applyOnlinePlayers(players){
@@ -73,7 +72,7 @@ function connectGameServer(){
           render();
           applyingPublicState=false;
         }
-        else if(message.type==="log"){log(message.text,false)}
+        else if(message.type==="log"){const text=message.playerId===onlinePlayerId?message.text:String(message.text||"").replaceAll("自分",state.players[2].name);log(text,false)}
         else if(message.type==="player_joined"||message.type==="player_names"){
           applyOnlinePlayers(message.players);
           render();
