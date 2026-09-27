@@ -3,7 +3,7 @@ const CARD_NAMES_URL="https://raw.githubusercontent.com/Omezi42/AnokoroImageFold
 const CARD_IMAGE_BASE="https://raw.githubusercontent.com/Omezi42/AnokoroImageFolder/main/images/captured_cards/";
 const CROPPED_CARD_IMAGE_BASE="https://raw.githubusercontent.com/Omezi42/AnokoroImageFolder/main/images/cropped_cards/";
 
-const state={turnPlayer:1,selected:null,deckInspectId:null,discardInspectId:null,discardInspectPlayer:1,players:{},savedDeck:[],deckSaveTimer:null,deckLoadTimer:null};
+const state={turnPlayer:1,selected:null,deckInspectId:null,discardInspectId:null,discardInspectPlayer:1,pendingDiscardPlayer:null,players:{},savedDeck:[],deckSaveTimer:null,deckLoadTimer:null};
 let cardNames=[];
 
 function imageUrl(name){return CARD_IMAGE_BASE+encodeURIComponent(name)+".png";}
@@ -94,7 +94,8 @@ function cardEl(p,z,c,visible){
   }
   if(c.revealed){const mark=document.createElement("span");mark.className="revealed-marker";mark.textContent="!";e.appendChild(mark)}
   e.dataset.player=String(p);e.dataset.zone=z;e.dataset.cardId=c.id;
-  if(p===1)e.onclick=()=>select(p,z,c.id);
+  if(state.pendingDiscardPlayer===p&&z==="hand")e.onclick=()=>completePendingDiscard(p,c.id);
+  else if(p===1)e.onclick=()=>select(p,z,c.id);
   return e;
 }
 function find(p,z,id){return state.players[p][z].find(c=>c.id===id);}
@@ -214,25 +215,36 @@ function startTurn(p){
   const x=state.players[p];
   x.monsters.forEach(m=>m.tapped=false);
   x.energy.forEach(e=>e.tapped=false);
-  if(x.deck.length){
-    if(x.hand.length>=MAX.hand){
-      const names=x.hand.map((c,i)=>(i+1)+": "+c.name).join("\n");
-      const choice=prompt(x.name+"の手札が上限です。ドロー前に捨てるカードを1枚選んでください。\\n"+names);
-      const index=Number(choice)-1;
-      if(Number.isInteger(index)&&index>=0&&index<x.hand.length){
-        const discarded=x.hand.splice(index,1)[0];
-        x.discard.push(discarded);
-        log(x.name+"はドロー前に「"+discarded.name+"」を捨てました");
-      }else{
-        log(x.name+"のドローをキャンセルしました");
-        render();
-        return;
-      }
+  if(x.deck.length&&x.hand.length>=MAX.hand){
+    const ok=confirm(x.name+"の手札が上限です。ドロー前に手札を1枚捨てますか？");
+    if(!ok){
+      log(x.name+"のドローをキャンセルしました");
+      render();
+      return;
     }
-    if(x.hand.length<MAX.hand)drawCards(1,p);
+    state.pendingDiscardPlayer=p;
+    state.selected=null;
+    render();
+    log(x.name+"はドロー前に捨てるカードを手札から1枚選択してください");
+    return;
   }
+  if(x.deck.length&&x.hand.length<MAX.hand)drawCards(1,p);
   render();
   log(x.name+" のターン開始");
+}
+function completePendingDiscard(p,id){
+  if(state.pendingDiscardPlayer!==p)return false;
+  const x=state.players[p],i=x.hand.findIndex(c=>c.id===id);
+  if(i<0)return true;
+  const discarded=x.hand.splice(i,1)[0];
+  x.discard.push(discarded);
+  state.pendingDiscardPlayer=null;
+  state.selected=null;
+  log(x.name+"はドロー前に「"+discarded.name+"」を捨てました");
+  if(x.deck.length&&x.hand.length<MAX.hand)drawCards(1,p);
+  render();
+  log(x.name+" のターン開始");
+  return true;
 }
 function endTurn(){
   const p=state.turnPlayer,x=state.players[p];
