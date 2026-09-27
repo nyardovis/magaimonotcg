@@ -1,5 +1,6 @@
 const SERVER_WS_URL="wss://card-game-server-dev.original-card-game-dev.workers.dev/room/test";
 let gameSocket=null;
+let onlinePlayerId=null;
 
 function connectGameServer(){
   try{
@@ -8,7 +9,8 @@ function connectGameServer(){
     gameSocket.onmessage=e=>{
       try{
         const message=JSON.parse(e.data);
-        if(message.type==="joined")log("オンラインルームに参加しました（"+message.playerId+"）");
+        if(message.type==="joined"){onlinePlayerId=message.playerId;log("オンラインルームに参加しました（"+message.playerId+"）");}
+        else if(message.type==="turn_changed"){state.turnPlayer=message.turnPlayer==="player1"?1:2;render();log("ターンが"+state.players[state.turnPlayer].name+"に移りました");}
         else if(message.type==="error")log("オンラインサーバー: "+message.message);
       }catch{}
     };
@@ -296,6 +298,11 @@ function completePendingDiscard(p,id){
 }
 function endTurn(){
   if(state.turnPlayer!==1)return;
+  if(onlinePlayerId!==null){
+    if(!gameSocket||gameSocket.readyState!==WebSocket.OPEN)return log("オンラインサーバーに接続されていません");
+    gameSocket.send(JSON.stringify({type:"operation",action:"end_turn"}));
+    return;
+  }
   const p=state.turnPlayer,x=state.players[p];
   x.monsters.forEach(m=>{m.damage=0});
   state.turnPlayer=p===1?2:1;
