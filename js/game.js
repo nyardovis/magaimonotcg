@@ -6,7 +6,7 @@ let applyingPublicState=false;
 
 function getPublicState(){
   const x=state.players[1];
-  return {life:x.life,deckCount:x.deck.length,deckCounters:x.deckCounters||0,deckHorizontal:!!x.deckHorizontal,facedownCount:x.facedown.length,monsters:x.monsters,energy:x.energy,field:x.field,discard:x.discard};
+  return {life:x.life,handCount:x.hand.length,deckCount:x.deck.length,deckCounters:x.deckCounters||0,deckHorizontal:!!x.deckHorizontal,facedownCount:x.facedown.length,monsters:x.monsters,energy:x.energy,field:x.field,discard:x.discard};
 }
 function sendPublicState(){
   if(applyingPublicState||!onlinePlayerId||!gameSocket||gameSocket.readyState!==WebSocket.OPEN)return;
@@ -21,6 +21,8 @@ function applyPublicState(playerId,publicState){
   if(playerId!==opponentId)return;
   const x=state.players[2];
   x.life=Number.isFinite(publicState.life)?publicState.life:x.life;
+  const handCount=Number.isInteger(publicState.handCount)&&publicState.handCount>=0?publicState.handCount:0;
+  x.hand=Array.from({length:handCount},(_,i)=>{const card=newCard("",playerId+"h"+i);card.faceUp=false;return card});
   x.deckCounters=Number.isFinite(publicState.deckCounters)?publicState.deckCounters:0;
   x.deckHorizontal=!!publicState.deckHorizontal;
   x.monsters=Array.isArray(publicState.monsters)?publicState.monsters:[];
@@ -71,6 +73,7 @@ function connectGameServer(){
           render();
           applyingPublicState=false;
         }
+        else if(message.type==="log"){log(message.text,false)}
         else if(message.type==="player_joined"||message.type==="player_names"){
           applyOnlinePlayers(message.players);
           render();
@@ -108,7 +111,7 @@ function newPlayer(name,p){
   const pool=shuffle([...cardNames]).slice(0,50);
   return{name,life:4000,deckCounters:0,deckList:pool.slice(),hand:pool.slice(0,7).map((n,i)=>newCard(n,p+"h"+i)),monsters:[],energy:[],field:[],discard:[],facedown:[],deck:pool.slice(7).map((n,i)=>newCard(n,p+"d"+i))};
 }
-function log(s){const e=document.querySelector("#log"),d=new Date().toLocaleTimeString("ja-JP"),html='<div>['+d+'] '+esc(s)+"</div>";e.insertAdjacentHTML("beforeend",html);e.scrollTop=e.scrollHeight;const v=document.querySelector("#deckViewerLog");if(v){v.insertAdjacentHTML("beforeend",html);v.scrollTop=v.scrollHeight}}
+function log(s,sendOnline=true){const e=document.querySelector("#log"),d=new Date().toLocaleTimeString("ja-JP"),html='<div>['+d+'] '+esc(s)+"</div>";e.insertAdjacentHTML("beforeend",html);e.scrollTop=e.scrollHeight;const v=document.querySelector("#deckViewerLog");if(v){v.insertAdjacentHTML("beforeend",html);v.scrollTop=v.scrollHeight}if(sendOnline&&onlinePlayerId&&gameSocket&&gameSocket.readyState===WebSocket.OPEN)gameSocket.send(JSON.stringify({type:"operation",action:"log",text:String(s).slice(0,200)}))}
 function esc(s){return String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
 
 function closeDiscardViewer(){const v=document.querySelector("#discardViewer");if(v)v.hidden=true;state.discardInspectId=null}
