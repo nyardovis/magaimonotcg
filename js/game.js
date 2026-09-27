@@ -65,7 +65,12 @@ function connectGameServer(){
           render();
           log("オンラインルームに参加しました（"+message.playerId+"）");
         }
-        else if(message.type==="public_state"){\n          applyPublicState(message.playerId,message.state);\n          applyingPublicState=true;\n          render();\n          applyingPublicState=false;\n        }\n        else if(message.type==="player_joined"||message.type==="player_names"){
+        else if(message.type==="public_state"){
+          applyPublicState(message.playerId,message.state);
+          applyingPublicState=true;
+          render();
+          applyingPublicState=false;
+        }\n        else if(message.type==="player_joined"||message.type==="player_names"){
           applyOnlinePlayers(message.players);
           render();
           if(message.type==="player_joined")log("対戦相手が参加しました");
