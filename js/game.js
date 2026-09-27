@@ -101,6 +101,7 @@ function cardEl(p,z,c,visible){
   if(c.revealed){const mark=document.createElement("span");mark.className="revealed-marker";mark.textContent="!";e.appendChild(mark)}
   e.dataset.player=String(p);e.dataset.zone=z;e.dataset.cardId=c.id;
   if(state.pendingDiscardPlayer===p&&z==="hand")e.onclick=()=>completePendingDiscard(p,c.id);
+  else if(state.pendingDiscardPlayer!==null)e.onclick=()=>{};
   else if(p===1)e.onclick=()=>select(p,z,c.id);
   return e;
 }
