@@ -277,7 +277,18 @@ function setup(){
   document.querySelector("#deckSave").onclick=()=>{state.savedDeck=(state.players[1].deckList||[]).slice();const b=document.querySelector("#deckSave");b.textContent="保存しました";b.classList.add("saved");clearTimeout(state.deckSaveTimer);state.deckSaveTimer=setTimeout(()=>{b.textContent="デッキを保存";b.classList.remove("saved")},1200);log("デッキを保存しました")};
   document.querySelector("#deckEditBack").onclick=()=>{const current=state.players[1].deckList||[],saved=state.savedDeck||[],same=current.length===saved.length&&current.every((name,i)=>name===saved[i]);if(!same&&!confirm("デッキの内容が保存されていません。保存せずに対戦画面へ戻りますか？"))return;document.querySelector("#deckEditor").hidden=true};
   document.querySelectorAll("[data-end]").forEach(b=>b.onclick=endTurn);
-  document.querySelectorAll("[data-first]").forEach(b=>b.onclick=()=>{const q=b.dataset.first;state.turnPlayer=q==="self"?1:q==="opponent"?2:(Math.random()<.5?1:2);render();log("先攻: "+state.players[state.turnPlayer].name)});
+  document.querySelectorAll("[data-first]").forEach(b=>b.onclick=()=>{
+    const q=b.dataset.first;
+    const target=q==="self"?"player1":q==="opponent"?"player2":(Math.random()<.5?"player1":"player2");
+    if(onlinePlayerId!==null){
+      if(!gameSocket||gameSocket.readyState!==WebSocket.OPEN)return log("オンラインサーバーに接続されていません");
+      gameSocket.send(JSON.stringify({type:"operation",action:"set_first_player",target}));
+      return;
+    }
+    state.turnPlayer=target==="player1"?1:2;
+    render();
+    log("先攻: "+state.players[state.turnPlayer].name);
+  });
   document.addEventListener("contextmenu",ev=>{const card=ev.target.closest(".card");if(!card)return;const p=Number(card.dataset.player),z=card.dataset.zone,id=card.dataset.cardId;if(p!==1||(z!=="monsters"&&z!=="energy")||!id)return;ev.preventDefault();ev.stopPropagation();const target=find(p,z,id);if(!target)return;target.tapped=!target.tapped;state.selected={p,z,id};render()});
   document.querySelector("#p1-life").parentElement.onclick=()=>{const modal=document.querySelector("#lifeModal"),input=document.querySelector("#lifeInput");modal.hidden=false;input.value="";input.focus();const close=()=>{modal.hidden=true};const apply=(action)=>{const x=state.players[1],raw=input.value.trim();if(!raw){close();return}const n=Number(raw);if(!Number.isInteger(n)){log("ライフの変更をキャンセルしました");close();return}const amount=Math.abs(n);if(action==="cancel"){close();return}let next=x.life;if(action==="damage")next=x.life-amount;if(action==="heal")next=x.life+amount;if(action==="change")next=amount;x.life=next;render();log(action==="damage"?"自分のライフに "+amount+" ダメージを与えました":"自分のライフを "+(action==="heal"?amount+" 回復しました":amount+" に変更しました"));if(x.life<=0)log(x.name+"のライフが0以下になったため、"+state.players[2].name+"の勝利です");close()};modal.querySelectorAll("[data-life-action]").forEach(b=>b.onclick=()=>apply(b.dataset.lifeAction));input.onkeydown=ev=>{if(ev.key!=="Enter")return;ev.preventDefault();const raw=input.value.trim();if(!raw)return;const n=Number(raw);if(!Number.isInteger(n)){log("ライフの変更をキャンセルしました");close();return}apply(n>0&&raw.startsWith("+")?"heal":"damage")}};
   document.querySelector("#rename").onclick=()=>{
@@ -291,7 +302,7 @@ function setup(){
       log("名前を変更しました");
     }
   };
-  document.querySelector("#reset").onclick=()=>{if(confirm("自分の盤面をリセットしますか？")){const n=state.players[1].name;const deckList=(state.savedDeck||[]).slice();const p=newPlayer(n,"p1");const pool=shuffle((deckList.length?deckList:p.deckList).slice());p.deckList=pool.slice();p.hand=pool.slice(0,7).map((name,i)=>newCard(name,"p1h"+i));p.deck=pool.slice(7).map((name,i)=>newCard(name,"p1d"+i));state.players[1]=p;state.selected=null;render();log("自分の盤面をリセットし、デッキをシャッフルして7枚ドローしました")}};
+  document.querySelector("#reset").onclick=()=>{if(confirm("自分の盤面をリセットしますか？")){const n=state.players[1].name;const deckList=(state.savedDeck||[]).slice();const p=newPlayer(n,"p1");const pool=shuffle((deckList.length?deckList:p.deckList).slice());p.deckList=pool.slice();p.hand=pool.slice(0,7).map((name,i)=>newCard(name,"p1h"+i));p.deck=pool.slice(7).map((name,i)=>newCard(name,"p1d"+i));state.players[1]=p;state.selected=null;state.pendingDiscardPlayer=null;lastPublicState=null;render();log("自分の盤面をリセットし、デッキをシャッフルして7枚ドローしました")}};
 }
 async function start(){
   ensureDiscardWarning();
