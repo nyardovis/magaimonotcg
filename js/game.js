@@ -53,7 +53,10 @@ function render(){
     zone(p,"energy",x.energy);
     zone(p,"monsters",x.monsters);
     const endButton=document.querySelector(p===1?".player.self button[data-end]":".player.opponent button[data-end]");
-    if(endButton)endButton.hidden=p!==state.turnPlayer;
+    if(endButton){
+      endButton.hidden=false;
+      endButton.style.visibility=p===state.turnPlayer?"visible":"hidden";
+    }
     const h=document.querySelector("#p"+p+"-hand");h.innerHTML="";
     x.hand.forEach(c=>h.appendChild(cardEl(p,"hand",c,p===1||c.revealed)));
   }
@@ -173,6 +176,12 @@ function selection(){
     }else{
       add("相手に公開する",()=>{c.revealed=true;c.faceUp=true;state.selected={p:s.p,z:s.z,id:s.id};render()});
     }
+    add("手札を全て公開",()=>{
+      state.players[1].hand.forEach(card=>{card.revealed=true;card.faceUp=true});
+      state.selected={p:s.p,z:s.z,id:s.id};
+      render();
+      log("手札を全て公開しました");
+    });
   }
 }
 function openMonsterAdjust(c){const modal=document.querySelector("#monsterAdjustModal"),input=document.querySelector("#monsterAdjustInput");modal.hidden=false;input.value="";input.focus();const close=()=>{modal.hidden=true};const apply=(action)=>{const raw=input.value.trim();if(!raw){close();return}const n=Number(raw);if(!Number.isInteger(n)){log("ダメージ／回復の変更をキャンセルしました");close();return}const amount=Math.abs(n);if(action==="cancel"){close();return}if(action==="damage"){c.damage+=amount}if(action==="heal"){c.damage=Math.max(0,c.damage-amount)}if(action==="change"){c.modification=amount+c.damage}state.selected={p:1,z:"monsters",id:c.id};render();close()};modal.querySelectorAll("[data-monster-action]").forEach(b=>b.onclick=()=>apply(b.dataset.monsterAction));input.onkeydown=ev=>{if(ev.key!=="Enter")return;ev.preventDefault();const raw=input.value.trim();if(!raw)return;const n=Number(raw);if(!Number.isInteger(n)){log("ダメージ／回復の変更をキャンセルしました");close();return}apply(n>0&&raw.startsWith("+")?"heal":"damage")};}
