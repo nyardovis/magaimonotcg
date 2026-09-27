@@ -79,7 +79,7 @@ function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random
 function newCard(name,id){return{id,name,faceUp:true,revealed:false,tapped:false,counters:0,damage:0,modification:0};}
 function newPlayer(name,p){
   const pool=shuffle([...cardNames]).slice(0,50);
-  return{name,life:4000,deckCounters:0,deckList:pool.slice(),hand:pool.slice(0,7).map((n,i)=>newCard(n,p+"h"+i)),monsters:[],energy:[],field:[],discard:[],facedown:[],deck:pool.slice(7).map((n,i)=>newCard(n,p+"d"+i)};
+  return{name,life:4000,deckCounters:0,deckList:pool.slice(),hand:pool.slice(0,7).map((n,i)=>newCard(n,p+"h"+i)),monsters:[],energy:[],field:[],discard:[],facedown:[],deck:pool.slice(7).map((n,i)=>newCard(n,p+"d"+i))};
 }
 function log(s){const e=document.querySelector("#log"),d=new Date().toLocaleTimeString("ja-JP"),html='<div>['+d+'] '+esc(s)+"</div>";e.insertAdjacentHTML("beforeend",html);e.scrollTop=e.scrollHeight;const v=document.querySelector("#deckViewerLog");if(v){v.insertAdjacentHTML("beforeend",html);v.scrollTop=v.scrollHeight}}
 function esc(s){return String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
