@@ -65,7 +65,10 @@ function render(){
     }
     revealedStatus.textContent=statusText;
   }
-  document.querySelector("#turnPlayer").textContent=state.players[state.turnPlayer].name;
+  const turnName=state.players[state.turnPlayer].name;
+  document.querySelector("#turnPlayer").textContent=turnName;
+  const turnAreaLabel=document.querySelector("#turnAreaLabel");
+  if(turnAreaLabel)turnAreaLabel.textContent=turnName+"のターン";
   selection();
 }
 function zone(p,z,a){
