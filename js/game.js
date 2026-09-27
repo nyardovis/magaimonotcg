@@ -10,7 +10,7 @@ function connectGameServer(){
       playerToken=crypto.randomUUID();
       localStorage.setItem(key,playerToken);
     }
-    gameSocket=new WebSocket(SERVER_WS_URL+"?token="+encodeURIComponent(playerToken));
+    gameSocket=new WebSocket(SERVER_WS_URL+"?session="+encodeURIComponent(playerToken));
     gameSocket.onopen=()=>log("オンラインサーバーに接続しました");
     gameSocket.onmessage=e=>{
       try{
