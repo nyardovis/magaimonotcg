@@ -145,7 +145,7 @@ function selection(){
   if(s.z==="field"){for(let i=destinations.length-1;i>=0;i--)if(["monsters","energy","facedown"].includes(destinations[i][0]))destinations.splice(i,1);}
   if(s.z==="facedown")destinations.splice(2,3);
   if(s.z==="energy")destinations.splice(2,4);
-  if(s.z==="monsters")destinations.splice(3,2);
+  if(s.z==="monsters"){destinations.splice(2,1);destinations.splice(3,1);}
   for(const[z,label]of destinations)if(z!==s.z&&!(s.z==="monsters"&&z==="facedown"))add(label,()=>move(z));
   if(s.z==="hand"){
     const spacer=document.createElement("div");spacer.style.height="12px";op.appendChild(spacer);
