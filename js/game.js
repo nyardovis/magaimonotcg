@@ -82,7 +82,7 @@ function connectGameServer(){
         else if(message.type==="first_player_set"){
           state.turnPlayer=message.turnPlayer===onlinePlayerId?1:2;
           render();
-          log("先攻: "+state.players[state.turnPlayer].name);
+          log("先攻: "+state.players[state.turnPlayer].name,false);
         }
         else if(message.type==="turn_changed"){
           state.turnPlayer=message.turnPlayer===onlinePlayerId?1:2;
