@@ -25,7 +25,7 @@ function renderDiscardViewer(){
   cards.forEach(c=>{const e=document.createElement("div");e.className="discard-viewer-card"+(state.selected?.id===c.id?" selected":"");const img=document.createElement("img");img.src=imageUrl(c.name);img.alt=c.name;img.loading="lazy";img.onerror=()=>{img.replaceWith(document.createTextNode(c.name))};e.appendChild(img);e.onclick=ev=>{ev.stopPropagation();state.selected={p,z:"discard",id:c.id};render()};list.appendChild(e)});
   
 }
-function moveInspectedDiscardCard(dest){const x=state.players[state.discardInspectPlayer||1],i=x.discard.findIndex(c=>c.id===state.discardInspectId);if(i<0)return;if(MAX[dest]!==undefined&&x[dest].length>=MAX[dest])return log(dest+" の上限のため移動をキャンセル");const c=x.discard.splice(i,1)[0];c.faceUp=dest==="facedown"?false:true;x[dest].push(c);log("捨て札から "+c.name+" を "+({"deck":"山札","hand":"手札","monsters":"モンスター","energy":"エネルギー","field":"フィールド","facedown":"罠"}[dest])+" へ移動しました");state.discardInspectId=null;render();renderDiscardViewer()}
+function moveInspectedDiscardCard(dest){if(state.pendingDiscardPlayer!==null)return log("強制捨て中は捨て札からカードを移動できません");const x=state.players[state.discardInspectPlayer||1],i=x.discard.findIndex(c=>c.id===state.discardInspectId);if(i<0)return;if(MAX[dest]!==undefined&&x[dest].length>=MAX[dest])return log(dest+" の上限のため移動をキャンセル");const c=x.discard.splice(i,1)[0];c.faceUp=dest==="facedown"?false:true;x[dest].push(c);log("捨て札から "+c.name+" を "+({"deck":"山札","hand":"手札","monsters":"モンスター","energy":"エネルギー","field":"フィールド","facedown":"罠"}[dest])+" へ移動しました");state.discardInspectId=null;render();renderDiscardViewer()}
 function render(){
   for(const p of[1,2]){
     const x=state.players[p];
@@ -232,6 +232,7 @@ function move(dest){
 function drawCards(n,p=1){
   const x=state.players[p];
   if(x.hand.length+n>MAX.hand)return log("手札の上限のためドローをキャンセル");
+  if(x.deck.length===0){log(x.name+"は山札が0枚の状態でドローしようとしたため、"+state.players[p===1?2:1].name+"の勝利です");return}
   if(x.deck.length<n)return log("山札が足りないためドローをキャンセル");
   for(let i=0;i<n;i++)x.hand.push(x.deck.shift());
   state.selected=null;render();
@@ -389,7 +390,7 @@ function setup(){
     render();log("先攻: "+state.players[state.turnPlayer].name)
   });
   document.addEventListener("contextmenu",ev=>{const card=ev.target.closest(".card");if(!card)return;const p=Number(card.dataset.player),z=card.dataset.zone,id=card.dataset.cardId;if(p!==1||(z!=="monsters"&&z!=="energy")||!id)return;ev.preventDefault();ev.stopPropagation();const target=find(p,z,id);if(!target)return;target.tapped=!target.tapped;state.selected={p,z,id};render()});
-  document.querySelector("#p1-life").parentElement.onclick=()=>{const modal=document.querySelector("#lifeModal"),input=document.querySelector("#lifeInput");modal.hidden=false;input.value="";input.focus();const close=()=>{modal.hidden=true};const apply=(action)=>{const x=state.players[1],raw=input.value.trim();if(!raw){close();return}const n=Number(raw);if(!Number.isInteger(n)){log("ライフの変更をキャンセルしました");close();return}const amount=Math.abs(n);if(action==="cancel"){close();return}let next=x.life;if(action==="damage")next=x.life-amount;if(action==="heal")next=x.life+amount;if(action==="change")next=amount;x.life=next;render();log(action==="damage"?"自分のライフに "+amount+" ダメージを与えました":"自分のライフを "+(action==="heal"?amount+" 回復しました":amount+" に変更しました"));close()};modal.querySelectorAll("[data-life-action]").forEach(b=>b.onclick=()=>apply(b.dataset.lifeAction));input.onkeydown=ev=>{if(ev.key!=="Enter")return;ev.preventDefault();const raw=input.value.trim();if(!raw)return;const n=Number(raw);if(!Number.isInteger(n)){log("ライフの変更をキャンセルしました");close();return}apply(n>0&&raw.startsWith("+")?"heal":"damage")};};
+  document.querySelector("#p1-life").parentElement.onclick=()=>{const modal=document.querySelector("#lifeModal"),input=document.querySelector("#lifeInput");modal.hidden=false;input.value="";input.focus();const close=()=>{modal.hidden=true};const apply=(action)=>{const x=state.players[1],raw=input.value.trim();if(!raw){close();return}const n=Number(raw);if(!Number.isInteger(n)){log("ライフの変更をキャンセルしました");close();return}const amount=Math.abs(n);if(action==="cancel"){close();return}let next=x.life;if(action==="damage")next=x.life-amount;if(action==="heal")next=x.life+amount;if(action==="change")next=amount;x.life=next;render();log(action==="damage"?"自分のライフに "+amount+" ダメージを与えました":"自分のライフを "+(action==="heal"?amount+" 回復しました":amount+" に変更しました"));if(x.life<=0)log(x.name+"のライフが0以下になったため、"+state.players[2].name+"の勝利です");close()};modal.querySelectorAll("[data-life-action]").forEach(b=>b.onclick=()=>apply(b.dataset.lifeAction));input.onkeydown=ev=>{if(ev.key!=="Enter")return;ev.preventDefault();const raw=input.value.trim();if(!raw)return;const n=Number(raw);if(!Number.isInteger(n)){log("ライフの変更をキャンセルしました");close();return}apply(n>0&&raw.startsWith("+")?"heal":"damage")};};
   document.querySelector("#rename").onclick=()=>{
     const n=document.querySelector("#name").value.trim();if(n){state.players[1].name=n.slice(0,16);render();log("名前を変更しました")}
   };
