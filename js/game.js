@@ -76,10 +76,11 @@ function render(){
     const endButton=document.querySelector("#p"+p+"-hand")?.closest(".player")?.querySelector("button[data-end]");
     if(endButton){
       const localPlayer=onlinePlayerId==="player1"?1:onlinePlayerId==="player2"?2:1;
-      const canEnd=p===localPlayer&&p===state.turnPlayer;
-      endButton.hidden=!canEnd;
+      const isOwnButton=p===localPlayer;
+      const canEnd=isOwnButton&&p===state.turnPlayer;
+      endButton.hidden=false;
       endButton.disabled=!canEnd;
-      endButton.style.display=canEnd?"":"none";
+      endButton.style.display="";
       endButton.style.visibility=canEnd?"visible":"hidden";
       endButton.style.pointerEvents=canEnd?"auto":"none";
     }
