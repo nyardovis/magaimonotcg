@@ -1,6 +1,37 @@
 const SERVER_WS_URL="wss://card-game-server-dev.original-card-game-dev.workers.dev/room/test";
 let gameSocket=null;
 let onlinePlayerId=null;
+let lastPublicState=null;
+let applyingPublicState=false;
+
+function getPublicState(){
+  const x=state.players[1];
+  return {life:x.life,deckCount:x.deck.length,deckCounters:x.deckCounters||0,deckHorizontal:!!x.deckHorizontal,facedownCount:x.facedown.length,monsters:x.monsters,energy:x.energy,field:x.field,discard:x.discard};
+}
+function sendPublicState(){
+  if(applyingPublicState||!onlinePlayerId||!gameSocket||gameSocket.readyState!==WebSocket.OPEN)return;
+  const publicState=JSON.stringify(getPublicState());
+  if(publicState===lastPublicState)return;
+  lastPublicState=publicState;
+  gameSocket.send(JSON.stringify({type:"operation",action:"sync_public_state",state:JSON.parse(publicState)}));
+}
+function applyPublicState(playerId,publicState){
+  if(!onlinePlayerId||playerId===onlinePlayerId||!publicState)return;
+  const opponentId=onlinePlayerId==="player1"?"player2":"player1";
+  if(playerId!==opponentId)return;
+  const x=state.players[2];
+  x.life=Number.isFinite(publicState.life)?publicState.life:x.life;
+  x.deckCounters=Number.isFinite(publicState.deckCounters)?publicState.deckCounters:0;
+  x.deckHorizontal=!!publicState.deckHorizontal;
+  x.monsters=Array.isArray(publicState.monsters)?publicState.monsters:[];
+  x.energy=Array.isArray(publicState.energy)?publicState.energy:[];
+  x.field=Array.isArray(publicState.field)?publicState.field:[];
+  x.discard=Array.isArray(publicState.discard)?publicState.discard:[];
+  const deckCount=Number.isInteger(publicState.deckCount)&&publicState.deckCount>=0?publicState.deckCount:0;
+  x.deck=Array.from({length:deckCount},(_,i)=>newCard("",playerId+"d"+i));
+  x.facedown=Array.from({length:Math.max(0,Number(publicState.facedownCount)||0)},(_,i)=>newCard("",playerId+"f"+i));
+  x.hand=[];
+}
 
 function applyOnlinePlayers(players){
   if(!onlinePlayerId)return;
@@ -34,7 +65,7 @@ function connectGameServer(){
           render();
           log("オンラインルームに参加しました（"+message.playerId+"）");
         }
-        else if(message.type==="player_joined"||message.type==="player_names"){
+        else if(message.type==="public_state"){\n          applyPublicState(message.playerId,message.state);\n          applyingPublicState=true;\n          render();\n          applyingPublicState=false;\n        }\n        else if(message.type==="player_joined"||message.type==="player_names"){
           applyOnlinePlayers(message.players);
           render();
           if(message.type==="player_joined")log("対戦相手が参加しました");
@@ -143,6 +174,7 @@ function render(){
     if(pending!==null)discardWarning.textContent=state.players[pending].name+"：ドロー前に手札を1枚捨ててください（カードをクリック）";
   }
   selection();
+  sendPublicState();
 }
 function zone(p,z,a){
   const e=document.querySelector("#p"+p+"-"+z);e.innerHTML="";
