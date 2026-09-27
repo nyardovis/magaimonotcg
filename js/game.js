@@ -4,7 +4,13 @@ let onlinePlayerId=null;
 
 function connectGameServer(){
   try{
-    gameSocket=new WebSocket(SERVER_WS_URL);
+    const key="originalCardGamePlayerToken";
+    let playerToken=localStorage.getItem(key);
+    if(!playerToken){
+      playerToken=crypto.randomUUID();
+      localStorage.setItem(key,playerToken);
+    }
+    gameSocket=new WebSocket(SERVER_WS_URL+"?token="+encodeURIComponent(playerToken));
     gameSocket.onopen=()=>log("オンラインサーバーに接続しました");
     gameSocket.onmessage=e=>{
       try{
