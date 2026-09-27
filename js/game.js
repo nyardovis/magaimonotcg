@@ -134,6 +134,7 @@ function selection(){
   if(s.z==="energy"){const energySpacer=document.createElement("div");energySpacer.style.height="12px";document.querySelector("#ops").appendChild(energySpacer);}
   if(s.z==="monsters"){
     add("ダメージ / 回復",()=>openMonsterAdjust(c));
+    add("ステータスを修正",()=>openMonsterStatusAdjust(c));
     addCounterControls(op,c,"counters");
   }
   if(s.z==="field"){
