@@ -3,28 +3,15 @@ let gameSocket=null;
 let onlinePlayerId=null;
 
 function applyOnlinePlayers(players){
-  if(!players)return;
-  if(typeof players.player1==="string")state.players[1].name=players.player1;
-  if(typeof players.player2==="string")state.players[2].name=players.player2;
-  const localPlayer=onlinePlayerId==="player2"?2:1;
-  const p1=document.querySelector(".player:has(#p1-hand)");
-  const p2=document.querySelector(".player:has(#p2-hand)");
-  const divider=document.querySelector(".divider");
-  if(p1&&p2&&divider){
-    p1.classList.toggle("self",localPlayer===1);
-    p1.classList.toggle("opponent",localPlayer===2);
-    p2.classList.toggle("self",localPlayer===2);
-    p2.classList.toggle("opponent",localPlayer===1);
-    if(localPlayer===1){
-      divider.parentElement?.insertBefore(p2,divider);
-      divider.parentElement?.appendChild(p1);
-    }else{
-      divider.parentElement?.insertBefore(p1,divider);
-      divider.parentElement?.appendChild(p2);
-    }
+  if(!onlinePlayerId)return;
+  if(players){
+    const ownId=onlinePlayerId;
+    const opponentId=ownId==="player1"?"player2":"player1";
+    if(typeof players[ownId]==="string")state.players[1].name=players[ownId];
+    if(typeof players[opponentId]==="string")state.players[2].name=players[opponentId];
   }
   const nameInput=document.querySelector("#name");
-  if(nameInput)nameInput.value=state.players[localPlayer].name;
+  if(nameInput)nameInput.value=state.players[1].name;
 }
 
 function connectGameServer(){
@@ -43,7 +30,7 @@ function connectGameServer(){
         if(message.type==="joined"){
           onlinePlayerId=message.playerId;
           applyOnlinePlayers(message.players);
-          if(message.turnPlayer==="player1"||message.turnPlayer==="player2")state.turnPlayer=message.turnPlayer==="player1"?1:2;
+          if(message.turnPlayer==="player1"||message.turnPlayer==="player2")state.turnPlayer=message.turnPlayer===onlinePlayerId?1:2;
           render();
           log("オンラインルームに参加しました（"+message.playerId+"）");
         }
@@ -54,7 +41,7 @@ function connectGameServer(){
           else log("プレイヤー名を更新しました");
         }
         else if(message.type==="turn_changed"){
-          state.turnPlayer=message.turnPlayer==="player1"?1:2;
+          state.turnPlayer=message.turnPlayer===onlinePlayerId?1:2;
           render();
           log("ターンが"+state.players[state.turnPlayer].name+"に移りました");
         }
@@ -94,7 +81,7 @@ function renderDiscardViewer(){
 }
 function moveInspectedDiscardCard(dest){if(state.pendingDiscardPlayer!==null)return log("強制捨て中は捨て札からカードを移動できません");const x=state.players[state.discardInspectPlayer||1],i=x.discard.findIndex(c=>c.id===state.discardInspectId);if(i<0)return;if(MAX[dest]!==undefined&&x[dest].length>=MAX[dest])return log(dest+" の上限のため移動をキャンセル");const c=x.discard.splice(i,1)[0];c.faceUp=dest==="facedown"?false:true;x[dest].push(c);log("捨て札から "+c.name+" を "+({"deck":"山札","hand":"手札","monsters":"モンスター","energy":"エネルギー","field":"フィールド","facedown":"罠"}[dest])+" へ移動しました");state.discardInspectId=null;render();renderDiscardViewer()}
 function render(){
-  const localPlayer=onlinePlayerId==="player2"?2:1;
+  const localPlayer=1;
   applyOnlinePlayers();
   for(const p of[1,2]){
     const x=state.players[p];
