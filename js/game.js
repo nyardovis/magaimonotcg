@@ -77,9 +77,10 @@ function render(){
     if(endButton){
       const localPlayer=onlinePlayerId==="player1"?1:onlinePlayerId==="player2"?2:1;
       const canEnd=p===localPlayer&&p===state.turnPlayer;
-      endButton.hidden=!canEnd;
+      endButton.hidden=false;
       endButton.disabled=!canEnd;
-      endButton.style.visibility=canEnd?"visible":"hidden";
+      endButton.style.display=canEnd?"":"none";
+      endButton.style.visibility="visible";
       endButton.style.pointerEvents=canEnd?"auto":"none";
     }
     const h=document.querySelector("#p"+p+"-hand");h.innerHTML="";
