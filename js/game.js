@@ -130,13 +130,6 @@ function selection(){
   }
   op.innerHTML="";
   if(s.p!==1){op.textContent="相手のカードは確認のみ";return}
-  if(s.z==="hand"){
-    if(c.revealed){
-      add("公開をやめる",()=>{c.revealed=false;state.selected={p:s.p,z:s.z,id:s.id};render()});
-    }else{
-      add("相手に公開する",()=>{c.revealed=true;c.faceUp=true;state.selected={p:s.p,z:s.z,id:s.id};render()});
-    }
-  }
   if(s.z==="monsters"||s.z==="energy"){add("タップ / アンタップ",()=>{c.tapped=!c.tapped;state.selected={p:s.p,z:s.z,id:s.id};render()});}
   if(s.z==="energy"){const energySpacer=document.createElement("div");energySpacer.style.height="12px";document.querySelector("#ops").appendChild(energySpacer);}
   if(s.z==="monsters"){
@@ -152,6 +145,14 @@ function selection(){
   if(s.z==="energy")destinations.splice(2,4);
   if(s.z==="monsters")destinations.splice(3,2);
   for(const[z,label]of destinations)if(z!==s.z&&!(s.z==="monsters"&&z==="facedown"))add(label,()=>move(z));
+  if(s.z==="hand"){
+    const spacer=document.createElement("div");spacer.style.height="12px";op.appendChild(spacer);
+    if(c.revealed){
+      add("公開をやめる",()=>{c.revealed=false;state.selected={p:s.p,z:s.z,id:s.id};render()});
+    }else{
+      add("相手に公開する",()=>{c.revealed=true;c.faceUp=true;state.selected={p:s.p,z:s.z,id:s.id};render()});
+    }
+  }
 }
 function openMonsterAdjust(c){const modal=document.querySelector("#monsterAdjustModal"),input=document.querySelector("#monsterAdjustInput");modal.hidden=false;input.value="";input.focus();const close=()=>{modal.hidden=true};const apply=(action)=>{const raw=input.value.trim();if(!raw){close();return}const n=Number(raw);if(!Number.isInteger(n)){log("ダメージ／回復の変更をキャンセルしました");close();return}const amount=Math.abs(n);if(action==="cancel"){close();return}if(action==="damage"){c.damage+=amount}if(action==="heal"){c.damage=Math.max(0,c.damage-amount);if(c.damage===0)c.modification=Math.max(0,c.modification)}if(action==="change"){c.modification=amount-c.recovery+c.damage}state.selected={p:1,z:"monsters",id:c.id};render();close()};modal.querySelectorAll("[data-monster-action]").forEach(b=>b.onclick=()=>apply(b.dataset.monsterAction));input.onkeydown=ev=>{if(ev.key!=="Enter")return;ev.preventDefault();const raw=input.value.trim();if(!raw)return;const n=Number(raw);if(!Number.isInteger(n)){log("ダメージ／回復の変更をキャンセルしました");close();return}apply(n>0&&raw.startsWith("+")?"heal":"damage")};}
 function add(t,fn){const b=document.createElement("button");b.textContent=t;b.onclick=fn;document.querySelector("#ops").appendChild(b)}
