@@ -54,8 +54,11 @@ function render(){
     zone(p,"monsters",x.monsters);
     const endButton=document.querySelector(p===1?".player.self button[data-end]":".player.opponent button[data-end]");
     if(endButton){
+      const canEnd=p===1&&p===state.turnPlayer;
       endButton.hidden=false;
-      endButton.style.visibility=p===state.turnPlayer?"visible":"hidden";
+      endButton.disabled=!canEnd;
+      endButton.style.visibility=canEnd?"visible":"hidden";
+      endButton.style.pointerEvents=canEnd?"auto":"none";
     }
     const h=document.querySelector("#p"+p+"-hand");h.innerHTML="";
     x.hand.forEach(c=>h.appendChild(cardEl(p,"hand",c,p===1||c.revealed)));
@@ -103,7 +106,7 @@ function cardEl(p,z,c,visible){
   }
   if(c.revealed){const mark=document.createElement("span");mark.className="revealed-marker";mark.textContent="!";e.appendChild(mark)}
   e.dataset.player=String(p);e.dataset.zone=z;e.dataset.cardId=c.id;
-  if(state.pendingDiscardPlayer===p&&z==="hand")e.onclick=()=>completePendingDiscard(p,c.id);
+  if(state.pendingDiscardPlayer===p&&z==="hand"&&p===1)e.onclick=()=>completePendingDiscard(p,c.id);
   else if(state.pendingDiscardPlayer!==null)e.onclick=()=>{};
   else if(p===1)e.onclick=()=>select(p,z,c.id);
   return e;
@@ -257,6 +260,7 @@ function startTurn(p){
   log(x.name+" のターン開始");
 }
 function completePendingDiscard(p,id){
+  if(p!==1)return false;
   if(state.pendingDiscardPlayer!==p)return false;
   const x=state.players[p],i=x.hand.findIndex(c=>c.id===id);
   if(i<0)return true;
@@ -271,6 +275,7 @@ function completePendingDiscard(p,id){
   return true;
 }
 function endTurn(){
+  if(state.turnPlayer!==1)return;
   const p=state.turnPlayer,x=state.players[p];
   x.monsters.forEach(m=>{m.damage=0});
   state.turnPlayer=p===1?2:1;
