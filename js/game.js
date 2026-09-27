@@ -8,7 +8,7 @@ let cardNames=[];
 
 function imageUrl(name){return CARD_IMAGE_BASE+encodeURIComponent(name)+".png";}
 function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a;}
-function newCard(name,id){return{id,name,faceUp:true,revealed:false,tapped:false,counters:0,damage:0,recovery:0,modification:0};}
+function newCard(name,id){return{id,name,faceUp:true,revealed:false,tapped:false,counters:0,damage:0,modification:0};}
 function newPlayer(name,p){
   const pool=shuffle([...cardNames]).slice(0,50);
   return{name,life:4000,deckCounters:0,deckList:pool.slice(),hand:pool.slice(0,7).map((n,i)=>newCard(n,p+"h"+i)),monsters:[],energy:[],field:[],discard:[],facedown:[],deck:pool.slice(7).map((n,i)=>newCard(n,p+"d"+i))};
@@ -83,7 +83,7 @@ function cardEl(p,z,c,visible){
     img.src=(z==="energy"?CROPPED_CARD_IMAGE_BASE:CARD_IMAGE_BASE)+encodeURIComponent(c.name)+".png"+(z==="energy"?"?energyv=3":"");img.alt=c.name;img.loading="lazy";
     img.onerror=()=>{img.replaceWith(document.createTextNode(c.name));};
     e.appendChild(img);
-    const a=c.modification+c.recovery-c.damage;
+    const a=c.modification-c.damage;
     if(a)e.insertAdjacentHTML("beforeend",'<span class="adjust">'+(a>0?"+":"")+a+"</span>");
     if(c.counters)e.insertAdjacentHTML("beforeend",'<span class="counter">'+c.counters+"</span>");
   }
@@ -153,7 +153,7 @@ function selection(){
   if(s.z==="monsters")destinations.splice(3,2);
   for(const[z,label]of destinations)if(z!==s.z&&!(s.z==="monsters"&&z==="facedown"))add(label,()=>move(z));
 }
-function openMonsterAdjust(c){const modal=document.querySelector("#monsterAdjustModal"),input=document.querySelector("#monsterAdjustInput");modal.hidden=false;input.value="";input.focus();const close=()=>{modal.hidden=true};const apply=(action)=>{const raw=input.value.trim();if(!raw){close();return}const n=Number(raw);if(!Number.isInteger(n)){log("ダメージ／回復の変更をキャンセルしました");close();return}const amount=Math.abs(n);if(action==="cancel"){close();return}if(action==="damage"){c.damage+=amount}if(action==="heal"){c.recovery=Math.min(c.damage,c.recovery+amount)}if(action==="change"){c.modification=amount-c.recovery+c.damage}state.selected={p:1,z:"monsters",id:c.id};render();close()};modal.querySelectorAll("[data-monster-action]").forEach(b=>b.onclick=()=>apply(b.dataset.monsterAction));input.onkeydown=ev=>{if(ev.key!=="Enter")return;ev.preventDefault();const raw=input.value.trim();if(!raw)return;const n=Number(raw);if(!Number.isInteger(n)){log("ダメージ／回復の変更をキャンセルしました");close();return}apply(n>0&&raw.startsWith("+")?"heal":"damage")};}
+function openMonsterAdjust(c){const modal=document.querySelector("#monsterAdjustModal"),input=document.querySelector("#monsterAdjustInput");modal.hidden=false;input.value="";input.focus();const close=()=>{modal.hidden=true};const apply=(action)=>{const raw=input.value.trim();if(!raw){close();return}const n=Number(raw);if(!Number.isInteger(n)){log("ダメージ／回復の変更をキャンセルしました");close();return}const amount=Math.abs(n);if(action==="cancel"){close();return}if(action==="damage"){c.damage+=amount}if(action==="heal"){c.damage=Math.max(0,c.damage-amount);if(c.damage===0)c.modification=Math.max(0,c.modification)}if(action==="change"){c.modification=amount-c.recovery+c.damage}state.selected={p:1,z:"monsters",id:c.id};render();close()};modal.querySelectorAll("[data-monster-action]").forEach(b=>b.onclick=()=>apply(b.dataset.monsterAction));input.onkeydown=ev=>{if(ev.key!=="Enter")return;ev.preventDefault();const raw=input.value.trim();if(!raw)return;const n=Number(raw);if(!Number.isInteger(n)){log("ダメージ／回復の変更をキャンセルしました");close();return}apply(n>0&&raw.startsWith("+")?"heal":"damage")};}
 function add(t,fn){const b=document.createElement("button");b.textContent=t;b.onclick=fn;document.querySelector("#ops").appendChild(b)}
 function addCounterControls(parent,target,key){const row=document.createElement("div");row.className="counter-actions";const plus=document.createElement("button");plus.textContent="カウンター +1";plus.onclick=()=>{target[key]=(target[key]||0)+1;render()};const minus=document.createElement("button");minus.textContent="カウンター -1";minus.onclick=()=>{if((target[key]||0)===0)return log("カウンター減少をキャンセル");target[key]--;render()};row.append(plus,minus);parent.appendChild(row)}
 function openDeckViewer(){state.deckInspectId=null;renderDeckViewer();const v=document.querySelector("#deckViewerLog"),l=document.querySelector("#log");if(v&&l){v.innerHTML=l.innerHTML;v.scrollTop=v.scrollHeight}document.querySelector("#deckViewer").hidden=false}
@@ -203,7 +203,7 @@ function drawCards(n){
 }
 function endTurn(){
   const p=state.turnPlayer,x=state.players[p];
-  x.monsters.forEach(m=>{m.damage=0;m.recovery=0});
+  x.monsters.forEach(m=>{m.damage=0});
   state.turnPlayer=p===1?2:1;
   const x2=state.players[state.turnPlayer];
   x2.monsters.forEach(m=>m.tapped=false);x2.energy.forEach(e=>e.tapped=false);
