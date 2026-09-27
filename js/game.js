@@ -75,7 +75,7 @@ function render(){
     zone(p,"monsters",x.monsters);
     const endButton=document.querySelector(p===1?".player.self button[data-end]":".player.opponent button[data-end]");
     if(endButton){
-      const canEnd=p===1&&p===state.turnPlayer;
+      const canEnd=onlinePlayerId?((onlinePlayerId==="player1"?1:2)===state.turnPlayer&&p===(onlinePlayerId==="player1"?1:2)):p===1&&p===state.turnPlayer;
       endButton.hidden=false;
       endButton.disabled=!canEnd;
       endButton.style.visibility=canEnd?"visible":"hidden";
@@ -297,7 +297,8 @@ function completePendingDiscard(p,id){
   return true;
 }
 function endTurn(){
-  if(state.turnPlayer!==1)return;
+  const localPlayer=onlinePlayerId?(onlinePlayerId==="player1"?1:2):1;
+  if(state.turnPlayer!==localPlayer)return;
   if(onlinePlayerId!==null){
     if(!gameSocket||gameSocket.readyState!==WebSocket.OPEN)return log("オンラインサーバーに接続されていません");
     gameSocket.send(JSON.stringify({type:"operation",action:"end_turn"}));
