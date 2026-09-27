@@ -136,6 +136,7 @@ function selection(){
     add("ダメージ / 回復",()=>openMonsterAdjust(c));
     add("ステータスを修正",()=>openMonsterStatusAdjust(c));
     addCounterControls(op,c,"counters");
+    const monsterSpacer=document.createElement("div");monsterSpacer.style.height="12px";op.appendChild(monsterSpacer);
   }
   if(s.z==="field"){
     addCounterControls(op,c,"counters");
