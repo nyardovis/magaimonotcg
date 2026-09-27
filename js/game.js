@@ -15,7 +15,7 @@ function connectGameServer(){
     gameSocket.onmessage=e=>{
       try{
         const message=JSON.parse(e.data);
-        if(message.type==="joined"){onlinePlayerId=message.playerId;render();log("オンラインルームに参加しました（"+message.playerId+"）");}
+        if(message.type==="joined"){onlinePlayerId=message.playerId;if(message.turnPlayer==="player1"||message.turnPlayer==="player2")state.turnPlayer=message.turnPlayer==="player1"?1:2;render();log("オンラインルームに参加しました（"+message.playerId+"）");}
         else if(message.type==="turn_changed"){state.turnPlayer=message.turnPlayer==="player1"?1:2;render();log("ターンが"+state.players[state.turnPlayer].name+"に移りました");}
         else if(message.type==="error")log("オンラインサーバー: "+message.message);
       }catch{}
