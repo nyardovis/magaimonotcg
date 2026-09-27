@@ -70,7 +70,8 @@ function connectGameServer(){
           applyingPublicState=true;
           render();
           applyingPublicState=false;
-        }\n        else if(message.type==="player_joined"||message.type==="player_names"){
+        }
+        else if(message.type==="player_joined"||message.type==="player_names"){
           applyOnlinePlayers(message.players);
           render();
           if(message.type==="player_joined")log("対戦相手が参加しました");
