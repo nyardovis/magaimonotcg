@@ -73,10 +73,11 @@ function render(){
     deck.classList.toggle("horizontal",!!x.deckHorizontal);
     zone(p,"energy",x.energy);
     zone(p,"monsters",x.monsters);
-    const endButton=document.querySelector(p===1?".player.self button[data-end]":".player.opponent button[data-end]");
+    const endButton=document.querySelector("#p"+p+"-hand")?.closest(".player")?.querySelector("button[data-end]");
     if(endButton){
-      const canEnd=onlinePlayerId?((onlinePlayerId==="player1"?1:2)===state.turnPlayer&&p===(onlinePlayerId==="player1"?1:2)):p===1&&p===state.turnPlayer;
-      endButton.hidden=false;
+      const localPlayer=onlinePlayerId==="player1"?1:onlinePlayerId==="player2"?2:1;
+      const canEnd=p===localPlayer&&p===state.turnPlayer;
+      endButton.hidden=!canEnd;
       endButton.disabled=!canEnd;
       endButton.style.visibility=canEnd?"visible":"hidden";
       endButton.style.pointerEvents=canEnd?"auto":"none";
