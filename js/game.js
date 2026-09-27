@@ -29,7 +29,7 @@ function applyPublicState(playerId,publicState){
   x.discard=Array.isArray(publicState.discard)?publicState.discard:[];
   const deckCount=Number.isInteger(publicState.deckCount)&&publicState.deckCount>=0?publicState.deckCount:0;
   x.deck=Array.from({length:deckCount},(_,i)=>newCard("",playerId+"d"+i));
-  x.facedown=Array.from({length:Math.max(0,Number(publicState.facedownCount)||0)},(_,i)=>newCard("",playerId+"f"+i));
+  x.facedown=Array.from({length:Math.max(0,Number(publicState.facedownCount)||0)},(_,i)=>{const card=newCard("",playerId+"f"+i);card.faceUp=false;return card});
   x.hand=[];
 }
 
