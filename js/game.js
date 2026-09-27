@@ -52,6 +52,8 @@ function render(){
     deck.classList.toggle("horizontal",!!x.deckHorizontal);
     zone(p,"energy",x.energy);
     zone(p,"monsters",x.monsters);
+    const endButton=document.querySelector(p===1?".player.self button[data-end]":".player.opponent button[data-end]");
+    if(endButton)endButton.hidden=p!==state.turnPlayer;
     const h=document.querySelector("#p"+p+"-hand");h.innerHTML="";
     x.hand.forEach(c=>h.appendChild(cardEl(p,"hand",c,p===1||c.revealed)));
   }
@@ -201,20 +203,42 @@ function move(dest){
   state.selected=null;
   render();
 }
-function drawCards(n){
-  const x=state.players[1];
+function drawCards(n,p=1){
+  const x=state.players[p];
   if(x.hand.length+n>MAX.hand)return log("手札の上限のためドローをキャンセル");
   if(x.deck.length<n)return log("山札が足りないためドローをキャンセル");
   for(let i=0;i<n;i++)x.hand.push(x.deck.shift());
   state.selected=null;render();
 }
+function startTurn(p){
+  const x=state.players[p];
+  x.monsters.forEach(m=>m.tapped=false);
+  x.energy.forEach(e=>e.tapped=false);
+  if(x.deck.length){
+    if(x.hand.length>=MAX.hand){
+      const names=x.hand.map((c,i)=>(i+1)+": "+c.name).join("\n");
+      const choice=prompt(x.name+"の手札が上限です。ドロー前に捨てるカードを1枚選んでください。\\n"+names);
+      const index=Number(choice)-1;
+      if(Number.isInteger(index)&&index>=0&&index<x.hand.length){
+        const discarded=x.hand.splice(index,1)[0];
+        x.discard.push(discarded);
+        log(x.name+"はドロー前に「"+discarded.name+"」を捨てました");
+      }else{
+        log(x.name+"のドローをキャンセルしました");
+        render();
+        return;
+      }
+    }
+    if(x.hand.length<MAX.hand)drawCards(1,p);
+  }
+  render();
+  log(x.name+" のターン開始");
+}
 function endTurn(){
   const p=state.turnPlayer,x=state.players[p];
   x.monsters.forEach(m=>{m.damage=0});
   state.turnPlayer=p===1?2:1;
-  const x2=state.players[state.turnPlayer];
-  x2.monsters.forEach(m=>m.tapped=false);x2.energy.forEach(e=>e.tapped=false);
-  render();log(x2.name+" のターン開始");
+  startTurn(state.turnPlayer);
 }
 function deckEditorCard(name){const e=document.createElement("div");e.className="deck-card";const img=document.createElement("img");img.src=imageUrl(name);img.alt=name;img.loading="lazy";img.onerror=()=>{img.remove()};e.appendChild(img);const n=document.createElement("div");n.className="deck-card-name";n.textContent=name;e.appendChild(n);e.onclick=()=>{const deck=state.players[1].deckList||[];deck.push(name);deck.sort((a,b)=>cardNames.indexOf(a)-cardNames.indexOf(b));state.players[1].deckList=deck;showDeckEditorPreview(name);renderDeckEditor()};e.oncontextmenu=ev=>{ev.preventDefault();ev.stopPropagation();showDeckEditorPreview(name)};
   return e}
