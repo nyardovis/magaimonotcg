@@ -142,7 +142,7 @@ function selection(){
     addCounterControls(op,c,"counters");
   }
   const destinations=[["hand","手札へ"],["monsters","モンスターへ"],["energy","エネルギーへ"],["discard","捨て札へ"],["field","フィールドへ"],["facedown","罠へ"],["deck","山札へ"]];
-  if(s.z==="field"){destinations.splice(2,4);destinations.splice(1,1);}
+  if(s.z==="field"){destinations.splice(2,3);destinations.splice(1,1);}
   if(s.z==="facedown")destinations.splice(2,3);
   if(s.z==="energy")destinations.splice(2,4);
   if(s.z==="monsters")destinations.splice(3,2);
