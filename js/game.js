@@ -75,13 +75,11 @@ function render(){
     zone(p,"monsters",x.monsters);
     const endButton=document.querySelector("#p"+p+"-hand")?.closest(".player")?.querySelector("button[data-end]");
     if(endButton){
-      const localPlayer=onlinePlayerId==="player1"?1:onlinePlayerId==="player2"?2:1;
-      const canEnd=p===localPlayer&&p===state.turnPlayer;
       endButton.hidden=false;
-      endButton.disabled=!canEnd;
-      endButton.style.display=canEnd?"":"none";
+      endButton.disabled=false;
+      endButton.style.display="";
       endButton.style.visibility="visible";
-      endButton.style.pointerEvents=canEnd?"auto":"none";
+      endButton.style.pointerEvents="auto";
     }
     const h=document.querySelector("#p"+p+"-hand");h.innerHTML="";
     x.hand.forEach(c=>h.appendChild(cardEl(p,"hand",c,p===1||c.revealed)));
