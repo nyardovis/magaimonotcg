@@ -42,6 +42,8 @@ function connectGameServer(){
         }
         else if(message.type==="turn_changed"){
           state.turnPlayer=message.turnPlayer===onlinePlayerId?1:2;
+          const currentPlayer=message.previousTurnPlayer===onlinePlayerId?1:2;
+          if(currentPlayer===1)state.players[1].monsters.forEach(m=>{m.damage=0});
           if(message.turnPlayer===onlinePlayerId)startTurn(1);
           else render();
           log("ターンが"+state.players[state.turnPlayer].name+"に移りました");
