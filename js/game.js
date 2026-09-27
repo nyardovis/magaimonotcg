@@ -34,7 +34,13 @@ function render(){
     const deckCount=document.querySelector("#p"+p+"-deck-count");if(deckCount)deckCount.textContent=x.deck.length+"枚";const deckCounter=document.querySelector("#p"+p+"-deck-counter");if(deckCounter)deckCounter.textContent=x.deckCounters||0;
     zone(p,"field",x.field);
     zone(p,"discard",x.discard.slice(-1));
-    const discardZone=document.querySelector("#p"+p+"-discard");if(discardZone){discardZone.onclick=()=>openDiscardViewer(p);Array.from(discardZone.children).forEach(card=>{card.onclick=ev=>{ev.stopPropagation();openDiscardViewer(p)}})}
+    const discardZone=document.querySelector("#p"+p+"-discard");
+    if(discardZone){
+      const discardCount=discardZone.querySelector(".discard-count");
+      if(discardCount)discardCount.textContent=x.discard.length+"枚";
+      else{const b=document.createElement("b");b.className="discard-count";b.textContent=x.discard.length+"枚";discardZone.appendChild(b)}
+    }
+    const discardZone2=document.querySelector("#p"+p+"-discard");if(discardZone){discardZone.onclick=()=>openDiscardViewer(p);Array.from(discardZone.children).forEach(card=>{card.onclick=ev=>{ev.stopPropagation();openDiscardViewer(p)}})}
     zone(p,"facedown",x.facedown);
     const deck=document.querySelector("#p"+p+"-deck");
     deck.innerHTML="";
