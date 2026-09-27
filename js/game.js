@@ -1,3 +1,22 @@
+const SERVER_WS_URL="wss://card-game-server-dev.original-card-game-dev.workers.dev/room/test";
+let gameSocket=null;
+
+function connectGameServer(){
+  try{
+    gameSocket=new WebSocket(SERVER_WS_URL);
+    gameSocket.onopen=()=>log("オンラインサーバーに接続しました");
+    gameSocket.onmessage=e=>{
+      try{
+        const message=JSON.parse(e.data);
+        if(message.type==="joined")log("オンラインルームに参加しました（"+message.playerId+"）");
+        else if(message.type==="error")log("オンラインサーバー: "+message.message);
+      }catch{}
+    };
+    gameSocket.onerror=()=>log("オンラインサーバーへの接続に失敗しました");
+    gameSocket.onclose=e=>{if(e.code!==1000)log("オンラインサーバーとの接続が切れました")};
+  }catch(e){console.error(e);log("オンラインサーバーへの接続を開始できませんでした")}
+}
+
 const MAX={hand:9,monsters:7,energy:18,field:1,facedown:3};
 const CARD_NAMES_URL="https://raw.githubusercontent.com/Omezi42/AnokoroImageFolder/main/all_card_names.txt";
 const CARD_IMAGE_BASE="https://raw.githubusercontent.com/Omezi42/AnokoroImageFolder/main/images/captured_cards/";
@@ -404,5 +423,6 @@ async function start(){
   const defaultDeck=readDeckCode("D2-AFoTAJsBARYEAVUEAYgBAd0EAd4CAd8DAfEEAoUEApgE");
   const p1=state.players[1];p1.deckList=defaultDeck.slice();const shuffledDeck=shuffle(defaultDeck.slice());p1.hand=shuffledDeck.slice(0,7).map((n,i)=>newCard(n,"p1h"+i));p1.deck=shuffledDeck.slice(7).map((n,i)=>newCard(n,"p1d"+i));state.savedDeck=defaultDeck.slice();
   setup();render();log("カード画像を読み込みました（"+cardNames.length+"種類）");
+  connectGameServer();
 }
 start().catch(e=>{console.error(e);document.querySelector("#log").textContent="カード一覧の読み込みに失敗しました。";});
