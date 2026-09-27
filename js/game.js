@@ -117,9 +117,10 @@ function selection(){
     pr.textContent="山札";
     op.innerHTML="";
     if(s.p!==1){op.innerHTML="";return}
+    add("山札を確認",()=>openDeckViewer());
+    if(state.pendingDiscardPlayer!==null)return;
     add("1枚引く",()=>drawCards(1));
     add("好きな枚数を引く",()=>{const n=Number(prompt("引く枚数を入力してください"));if(Number.isInteger(n)&&n>0)drawCards(n)});
-    add("山札を確認",()=>openDeckViewer());
     const deckSpacer=document.createElement("div");deckSpacer.style.height="12px";op.appendChild(deckSpacer);
     addCounterControls(op,state.players[1],"deckCounters");
     add("山札を横向きにする",()=>{state.players[1].deckHorizontal=!state.players[1].deckHorizontal;state.selected=null;render()});
@@ -128,6 +129,11 @@ function selection(){
   }
   const c=find(s.p,s.z,s.id);
   if(!c){state.selected=null;return render()}
+  if(state.pendingDiscardPlayer!==null&&!(s.p===state.pendingDiscardPlayer&&s.z==="hand")){
+    pr.textContent=s.p===state.pendingDiscardPlayer?"手札を1枚捨ててください":"カードを捨てるまで操作できません";
+    op.textContent=s.p===state.pendingDiscardPlayer?"手札のカードをクリックして捨ててください":"カードを捨てるまで操作できません";
+    return;
+  }
   pr.innerHTML="";
   if(c.faceUp!==false || (s.p===1 && s.z==="facedown")){
     const img=document.createElement("img");
