@@ -108,6 +108,9 @@ function connectGameServer(){
           render();
           applyingPublicState=false;
         }
+        else if(message.type==="card_move"){
+          applyRemoteMove(message.playerId,message.zone,message.dest,message.cardId);
+        }
         else if(message.type==="log"){const text=message.playerId===onlinePlayerId?message.text:String(message.text||"").replaceAll("自分",state.players[2].name);log(text,false)}
         else if(message.type==="player_left"){log("対戦相手が退出しました",false)}
         else if(message.type==="room_status"){roomPlayerCount=Number.isInteger(message.playerCount)?message.playerCount:0;render()}
@@ -313,7 +316,37 @@ function moveInspectedDeckCard(dest){
   if(state.pendingDiscardPlayer!==null)return log("強制捨て中は山札からカードを移動できません");
   const x=state.players[1],i=x.deck.findIndex(c=>c.id===state.deckInspectId);if(i<0)return;if(MAX[dest]!==undefined&&x[dest].length>=MAX[dest])return log(dest+" の上限のため移動をキャンセル");const c=x.deck.splice(i,1)[0];c.faceUp=dest==="facedown"?false:true;x[dest].push(c);log("山札から "+c.name+" を "+({"hand":"手札","monsters":"モンスター","energy":"エネルギー","field":"フィールド","facedown":"罠","discard":"捨て札"}[dest])+" へ移動しました");state.deckInspectId=null;render();renderDeckViewer();
 }
-function move(dest){const s=state.selected,x=state.players[1],src=x[s.z],i=src.findIndex(c=>c.id===s.id);if(i<0)return;if(MAX[dest]!==undefined&&x[dest].length>=MAX[dest])return log(dest+" の上限のため移動をキャンセル");const c=src.splice(i,1)[0];c.tapped=false;c.faceUp=dest==="facedown"?false:true;x[dest].push(c);state.selected=null;render()}
+function applyRemoteMove(playerId,zone,dest,cardId){
+  const p=playerId===onlinePlayerId?1:2;
+  const x=state.players[p];
+  if(!x||!Array.isArray(x[zone])||!Array.isArray(x[dest]))return;
+  const i=x[zone].findIndex(c=>c.id===cardId);
+  if(i<0)return;
+  if(MAX[dest]!==undefined&&x[dest].length>=MAX[dest])return;
+  const c=x[zone].splice(i,1)[0];
+  c.tapped=false;
+  c.faceUp=dest==="facedown"?false:true;
+  x[dest].push(c);
+  if(p===1)state.selected=null;
+  render();
+}
+function move(dest){
+  const s=state.selected,x=state.players[1],src=x[s.z],i=src.findIndex(c=>c.id===s.id);
+  if(i<0)return;
+  if(MAX[dest]!==undefined&&x[dest].length>=MAX[dest])return log(dest+" の上限のため移動をキャンセル");
+  if(onlinePlayerId!==null){
+    if(!gameSocket||gameSocket.readyState!==WebSocket.OPEN)return log("オンラインサーバーに接続されていません");
+    gameSocket.send(JSON.stringify({type:"operation",action:"move_card",zone:s.z,dest,cardId:s.id}));
+    return;
+  }
+  const c=src.splice(i,1)[0];
+  c.tapped=false;
+  c.faceUp=dest==="facedown"?false:true;
+  x[dest].push(c);
+  state.selected=null;
+  render();
+}
+const s=state.selected,x=state.players[1],src=x[s.z],i=src.findIndex(c=>c.id===s.id);if(i<0)return;if(MAX[dest]!==undefined&&x[dest].length>=MAX[dest])return log(dest+" の上限のため移動をキャンセル");const c=src.splice(i,1)[0];c.tapped=false;c.faceUp=dest==="facedown"?false:true;x[dest].push(c);state.selected=null;render()}
 function drawCards(n,p=1){const x=state.players[p];if(x.hand.length+n>MAX.hand)return log("手札の上限のためドローをキャンセル");if(x.deck.length===0){const winner=p===1?2:1;state.gameOver={winner,reason:"deck_empty"};log(x.name+"は山札が0枚の状態でドローしようとしたため、"+state.players[winner].name+"の勝利です");return}if(x.deck.length<n)return log("山札が足りないためドローをキャンセル");for(let i=0;i<n;i++)x.hand.push(x.deck.shift());state.selected=null;render()}
 function ensureDiscardWarning(){if(document.querySelector("#discardWarning"))return;const e=document.createElement("div");e.id="discardWarning";e.hidden=true;e.style.cssText="position:fixed;top:12px;left:50%;transform:translateX(-50%);z-index:9999;background:#8b0000;color:#fff;padding:10px 18px;border:2px solid #f33;border-radius:6px;font-weight:700;pointer-events:none;box-shadow:0 2px 8px rgba(0,0,0,.45);";document.body.appendChild(e)}
 function startTurn(p,showLog=true){const x=state.players[p];x.monsters.forEach(m=>m.tapped=false);x.energy.forEach(e=>e.tapped=false);if(x.deck.length===0){const winner=p===1?2:1;state.gameOver={winner,reason:"deck_empty"};render();log(x.name+"はターン開始時に山札が0枚だったため、"+state.players[winner].name+"の勝利です");return}if(x.deck.length&&x.hand.length>=MAX.hand){state.pendingDiscardPlayer=p;state.selected=null;render();log(x.name+"はドロー前に手札を1枚捨てる必要があります。手札のカードをクリックしてください");return}if(x.deck.length&&x.hand.length<MAX.hand)drawCards(1,p);render();if(showLog)log(x.name+" のターン開始")}
