@@ -215,10 +215,11 @@ function selection(){
   const s=state.selected;
   if(s.z==="deck"){pr.textContent="山札";op.innerHTML="";if(s.p!==1){op.innerHTML="";return}add("山札を確認",()=>openDeckViewer());if(state.pendingDiscardPlayer!==null)return;add("1枚引く",()=>drawCards(1));add("好きな枚数を引く",()=>{const n=Number(prompt("引く枚数を入力してください"));if(Number.isInteger(n)&&n>0)drawCards(n)});const deckSpacer=document.createElement("div");deckSpacer.style.height="12px";op.appendChild(deckSpacer);addCounterControls(op,state.players[1],"deckCounters");add("山札を横向きにする",()=>{state.players[1].deckHorizontal=!state.players[1].deckHorizontal;state.selected=null;render()});add("山札をシャッフルする",()=>{shuffle(state.players[1].deck);state.selected=null;render();log("山札をシャッフルしました")});return}
   const c=find(s.p,s.z,s.id);if(!c){state.selected=null;return render()}
-  if(state.pendingDiscardPlayer!==null&&!(s.p===state.pendingDiscardPlayer&&s.z==="hand")){pr.textContent=s.p===state.pendingDiscardPlayer?"手札を1枚捨ててください":"カードを捨てるまで操作できません";op.textContent=s.p===state.pendingDiscardPlayer?"手札のカードをクリックして捨ててください":"カードを捨てるまで操作できません";return}
+  const pendingLocked=state.pendingDiscardPlayer!==null&&!(s.p===state.pendingDiscardPlayer&&s.z==="hand");
   pr.innerHTML="";
   if(c.faceUp!==false||(s.p===1&&s.z==="facedown")){const img=document.createElement("img");img.src=imageUrl(c.name);img.alt=c.name;img.onerror=()=>{img.replaceWith(document.createTextNode(c.name))};pr.appendChild(img);if(c.faceUp===false&&s.z==="facedown"){const name=document.createElement("div");name.textContent=c.name;name.style.marginTop="4px";pr.appendChild(name)}}else pr.textContent="裏向きのカード";
   op.innerHTML="";
+  if(pendingLocked){op.textContent=s.p===state.pendingDiscardPlayer?"手札を1枚捨ててください":"カードを捨てるまで操作できません";return}
   if(s.p!==1){op.textContent="相手のカードは確認のみ";return}
   if(s.z==="monsters"||s.z==="energy")add("タップ / アンタップ",()=>{c.tapped=!c.tapped;state.selected={p:s.p,z:s.z,id:c.id};render()});
   if(s.z==="energy"){const energySpacer=document.createElement("div");energySpacer.style.height="12px";document.querySelector("#ops").appendChild(energySpacer)}
@@ -248,6 +249,7 @@ function renderDeckViewer(){
   for(const[z,label]of[["hand","手札へ"],["monsters","モンスターへ"],["energy","エネルギーへ"],["field","フィールドへ"],["facedown","罠へ"],["discard","捨て札へ"]]){const b=document.createElement("button");b.textContent=label;b.onclick=()=>moveInspectedDeckCard(z);actions.appendChild(b)}
 }
 function moveInspectedDeckCard(dest){
+  if(state.pendingDiscardPlayer!==null)return log("強制捨て中は山札からカードを移動できません");
   const x=state.players[1],i=x.deck.findIndex(c=>c.id===state.deckInspectId);if(i<0)return;if(MAX[dest]!==undefined&&x[dest].length>=MAX[dest])return log(dest+" の上限のため移動をキャンセル");const c=x.deck.splice(i,1)[0];c.faceUp=dest==="facedown"?false:true;x[dest].push(c);log("山札から "+c.name+" を "+({"hand":"手札","monsters":"モンスター","energy":"エネルギー","field":"フィールド","facedown":"罠","discard":"捨て札"}[dest])+" へ移動しました");state.deckInspectId=null;render();renderDeckViewer();
 }
 function move(dest){const s=state.selected,x=state.players[1],src=x[s.z],i=src.findIndex(c=>c.id===s.id);if(i<0)return;if(MAX[dest]!==undefined&&x[dest].length>=MAX[dest])return log(dest+" の上限のため移動をキャンセル");const c=src.splice(i,1)[0];c.tapped=false;c.faceUp=dest==="facedown"?false:true;x[dest].push(c);state.selected=null;render()}
