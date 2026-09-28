@@ -293,11 +293,11 @@ function selection(){
   if(s.z==="field")addCounterControls(op,c,"counters");
   const destinations=[["hand","手札へ"],["monsters","モンスターへ"],["energy","エネルギーへ"],["discard","捨て札へ"],["field","フィールドへ"],["facedown","罠へ"],["deck","山札へ"]];
   if(s.z==="field")for(let i=destinations.length-1;i>=0;i--)if(["monsters","energy","facedown"].includes(destinations[i][0]))destinations.splice(i,1);
-  if(s.z==="facedown")destinations.splice(2,3);
+  if(s.z==="facedown"){const keep=new Set(["hand","discard","deck"]);for(let i=destinations.length-1;i>=0;i--)if(!keep.has(destinations[i][0]))destinations.splice(i,1)}
   if(s.z==="energy")destinations.splice(2,4);
   if(s.z==="monsters"){destinations.splice(2,1);destinations.splice(3,1)}
   for(const[z,label]of destinations)if(z!==s.z&&!(s.z==="monsters"&&z==="facedown"))add(label,()=>move(z));
-  if(s.z==="facedown")add("表向きにする",()=>{c.faceUp=true;c.revealed=false;state.selected={p:s.p,z:s.z,id:c.id};render()});
+  if(s.z==="facedown"){const spacer=document.createElement("div");spacer.style.height="12px";op.appendChild(spacer);add(c.faceUp===false?"表向きにする":"裏向きにする",()=>{c.faceUp=c.faceUp===false;c.revealed=false;state.selected={p:s.p,z:s.z,id:c.id};render()})}
   if(s.z==="hand"){const spacer=document.createElement("div");spacer.style.height="12px";op.appendChild(spacer);if(c.revealed)add("公開をやめる",()=>{c.revealed=false;state.selected={p:s.p,z:s.z,id:c.id};render()});else add("相手に公開する",()=>{c.revealed=true;c.faceUp=true;state.selected={p:s.p,z:s.z,id:c.id};render()});add("手札を全て公開",()=>{state.players[1].hand.forEach(card=>{card.revealed=true;card.faceUp=true});state.selected={p:s.p,z:s.z,id:c.id};render();log("手札を全て公開しました")})}
 }
 function openMonsterAdjust(c){const modal=document.querySelector("#monsterAdjustModal"),input=document.querySelector("#monsterAdjustInput");modal.hidden=false;input.value="";input.focus();const close=()=>{modal.hidden=true};const apply=(action)=>{const raw=input.value.trim();if(!raw){close();return}const n=Number(raw);if(!Number.isInteger(n)){log("ダメージ／回復の変更をキャンセルしました");close();return}const amount=Math.abs(n);if(action==="cancel"){close();return}if(action==="damage")c.damage+=amount;if(action==="heal")c.damage=Math.max(0,c.damage-amount);if(action==="change")c.modification=amount+c.damage;state.selected={p:1,z:"monsters",id:c.id};render();close()};modal.querySelectorAll("[data-monster-action]").forEach(b=>b.onclick=()=>apply(b.dataset.monsterAction));input.onkeydown=ev=>{if(ev.key!=="Enter")return;ev.preventDefault();const raw=input.value.trim();if(!raw)return;const n=Number(raw);if(!Number.isInteger(n)){log("ダメージ／回復の変更をキャンセルしました");close();return}apply(n>0&&raw.startsWith("+")?"heal":"damage")}}
@@ -329,6 +329,7 @@ function applyRemoteMove(playerId,zone,dest,cardId){
   const c=x[zone].splice(i,1)[0];
   c.tapped=false;
   c.faceUp=dest==="facedown"?false:true;
+  if(dest==="facedown")c.revealed=false;
   x[dest].push(c);
   if(p===1)state.selected=null;
   render();
@@ -345,6 +346,7 @@ function move(dest){
   const c=src.splice(i,1)[0];
   c.tapped=false;
   c.faceUp=dest==="facedown"?false:true;
+  if(dest==="facedown")c.revealed=false;
   x[dest].push(c);
   state.selected=null;
   render();
