@@ -64,13 +64,20 @@ function enterRoom(room){
 function setupRoomLobby(){
   const params=new URLSearchParams(location.search);
   const room=normalizeRoomCode(params.get("room"));
-  if(room.length===6){currentRoom=room;const lobby=document.querySelector("#roomLobby");if(lobby)lobby.hidden=true;const status=document.querySelector("#roomStatus");if(status)status.textContent="ルーム: "+room;return true}
-  const lobby=document.querySelector("#roomLobby");if(lobby)lobby.hidden=false;
-  const create=document.querySelector("#roomCreate");if(create)create.onclick=()=>enterRoom(createRoomCode());
+  const lobby=document.querySelector("#roomLobby");
+  const create=document.querySelector("#roomCreate");
   const input=document.querySelector("#roomInput");
   const join=document.querySelector("#roomJoin");
+  if(create)create.onclick=()=>enterRoom(createRoomCode());
   if(join)join.onclick=()=>enterRoom(input?.value);
   if(input)input.onkeydown=e=>{if(e.key==="Enter")enterRoom(input.value)};
+  if(room.length===6){
+    currentRoom=room;
+    if(lobby)lobby.hidden=true;
+    const status=document.querySelector("#roomStatus");if(status)status.textContent="ルーム: "+room;
+    return true;
+  }
+  if(lobby)lobby.hidden=false;
   return false;
 }
 function connectGameServer(){
