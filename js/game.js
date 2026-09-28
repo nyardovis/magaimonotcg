@@ -75,6 +75,7 @@ function connectGameServer(){
           applyingPublicState=false;
         }
         else if(message.type==="log"){const text=message.playerId===onlinePlayerId?message.text:String(message.text||"").replaceAll("自分",state.players[2].name);log(text,false)}
+        else if(message.type==="player_left"){log("対戦相手が退出しました",false)}
         else if(message.type==="player_joined"||message.type==="player_names"){
           applyOnlinePlayers(message.players);
           render();
@@ -112,6 +113,24 @@ let cardNames=[];
 function imageUrl(name){return CARD_IMAGE_BASE+encodeURIComponent(name)+".png";}
 function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a;}
 function newCard(name,id){return{id,name,faceUp:true,revealed:false,tapped:false,counters:0,damage:0,modification:0};}
+function saveLocalGameState(){
+  try{
+    localStorage.setItem("originalCardGameLocalState",JSON.stringify({player:state.players[1],turnPlayer:state.turnPlayer,pendingDiscardPlayer:state.pendingDiscardPlayer,gameOver:state.gameOver}));
+  }catch(e){}
+}
+function loadLocalGameState(){
+  try{
+    const raw=localStorage.getItem("originalCardGameLocalState");
+    if(!raw)return false;
+    const saved=JSON.parse(raw);
+    if(!saved||!saved.player||!Array.isArray(saved.player.hand)||!Array.isArray(saved.player.deck))return false;
+    state.players[1]=saved.player;
+    if(saved.turnPlayer===1||saved.turnPlayer===2)state.turnPlayer=saved.turnPlayer;
+    state.pendingDiscardPlayer=saved.pendingDiscardPlayer===1?1:null;
+    state.gameOver=saved.gameOver&&typeof saved.gameOver==="object"?saved.gameOver:null;
+    return true;
+  }catch(e){return false}
+}
 function newPlayer(name,p){
   const pool=shuffle([...cardNames]).slice(0,50);
   return{name,life:4000,deckCounters:0,deckList:pool.slice(),hand:pool.slice(0,7).map((n,i)=>newCard(n,p+"h"+i)),monsters:[],energy:[],field:[],discard:[],facedown:[],deck:pool.slice(7).map((n,i)=>newCard(n,p+"d"+i))};
@@ -130,6 +149,7 @@ function renderDiscardViewer(){
 function moveInspectedDiscardCard(dest){if(state.pendingDiscardPlayer!==null)return log("強制捨て中は捨て札からカードを移動できません");const x=state.players[state.discardInspectPlayer||1],i=x.discard.findIndex(c=>c.id===state.discardInspectId);if(i<0)return;if(MAX[dest]!==undefined&&x[dest].length>=MAX[dest])return log(dest+" の上限のため移動をキャンセル");const c=x.discard.splice(i,1)[0];c.faceUp=dest==="facedown"?false:true;x[dest].push(c);log("捨て札から "+c.name+" を "+({"deck":"山札","hand":"手札","monsters":"モンスター","energy":"エネルギー","field":"フィールド","facedown":"罠"}[dest])+" へ移動しました");state.discardInspectId=null;render();renderDiscardViewer()}
 function render(){
   const localPlayer=1;
+  saveLocalGameState();
   applyOnlinePlayers();
   for(const p of[1,2]){
     const x=state.players[p];
@@ -323,6 +343,7 @@ async function start(){
   state.players={1:newPlayer("プレイヤー1","p1"),2:newPlayer("プレイヤー2","p2")};
   const defaultDeck=readDeckCode("D2-AFoTAJsBARYEAVUEAYgBAd0EAd4CAd8DAfEEAoUEApgE");
   const p1=state.players[1];p1.deckList=defaultDeck.slice();const shuffledDeck=shuffle(defaultDeck.slice());p1.hand=shuffledDeck.slice(0,7).map((n,i)=>newCard(n,"p1h"+i));p1.deck=shuffledDeck.slice(7).map((n,i)=>newCard(n,"p1d"+i));state.savedDeck=defaultDeck.slice();
+  loadLocalGameState();
   setup();render();log("カード画像を読み込みました（"+cardNames.length+"種類）");
   connectGameServer();
 }
