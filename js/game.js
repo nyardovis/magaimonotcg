@@ -202,9 +202,10 @@ function cardEl(p,z,c,visible){
   else{const img=document.createElement("img");img.src=(z==="energy"?CROPPED_CARD_IMAGE_BASE:CARD_IMAGE_BASE)+encodeURIComponent(c.name)+".png"+(z==="energy"?"?energyv=3":"");img.alt=c.name;img.loading="lazy";img.onerror=()=>{img.replaceWith(document.createTextNode(c.name))};e.appendChild(img);const a=c.modification-c.damage;if(a)e.insertAdjacentHTML("beforeend",'<span class="adjust">'+(a>0?"+":"")+a+"</span>");if(c.counters)e.insertAdjacentHTML("beforeend",'<span class="counter">'+c.counters+"</span>")}
   if(c.revealed){const mark=document.createElement("span");mark.className="revealed-marker";mark.textContent="!";e.appendChild(mark)}
   e.dataset.player=String(p);e.dataset.zone=z;e.dataset.cardId=c.id;
-  if(state.pendingDiscardPlayer===p&&z==="hand"&&p===1)e.onclick=()=>completePendingDiscard(p,c.id);
-  else if(state.pendingDiscardPlayer!==null)e.onclick=()=>{};
-  else if(p===1)e.onclick=()=>select(p,z,c.id);
+  if(state.pendingDiscardPlayer!==null){
+    if(state.pendingDiscardPlayer===1&&p===1&&z==="hand")e.onclick=()=>select(p,z,c.id);
+    else e.onclick=()=>select(p,z,c.id);
+  }else e.onclick=()=>select(p,z,c.id);
   return e;
 }
 function find(p,z,id){return state.players[p][z].find(c=>c.id===id)}
@@ -219,7 +220,10 @@ function selection(){
   pr.innerHTML="";
   if(c.faceUp!==false||(s.p===1&&s.z==="facedown")){const img=document.createElement("img");img.src=imageUrl(c.name);img.alt=c.name;img.onerror=()=>{img.replaceWith(document.createTextNode(c.name))};pr.appendChild(img);if(c.faceUp===false&&s.z==="facedown"){const name=document.createElement("div");name.textContent=c.name;name.style.marginTop="4px";pr.appendChild(name)}}else pr.textContent="裏向きのカード";
   op.innerHTML="";
-  if(pendingLocked){op.textContent=s.p===state.pendingDiscardPlayer?"手札を1枚捨ててください":"カードを捨てるまで操作できません";return}
+  if(pendingLocked){
+    if(s.p===1&&s.z==="hand"&&state.pendingDiscardPlayer===1){add("このカードを捨てる",()=>completePendingDiscard(1,s.id));return}
+    op.textContent="カードを捨てるまで操作できません";return
+  }
   if(s.p!==1){op.textContent="相手のカードは確認のみ";return}
   if(s.z==="monsters"||s.z==="energy")add("タップ / アンタップ",()=>{c.tapped=!c.tapped;state.selected={p:s.p,z:s.z,id:c.id};render()});
   if(s.z==="energy"){const energySpacer=document.createElement("div");energySpacer.style.height="12px";document.querySelector("#ops").appendChild(energySpacer)}
