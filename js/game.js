@@ -120,7 +120,7 @@ function connectGameServer(){
           if(message.turnPlayer===onlinePlayerId)startTurn(1,false);
           else {render();log("ターンが"+state.players[state.turnPlayer].name+"に移りました",false);}
         }
-        else if(message.type==="error")log("オンラインサーバー: "+message.message);
+        else if(message.type==="error"){log("オンラインサーバー: "+message.message);if(message.message==="Room is full"){onlinePlayerId=null;currentRoom="";const url=new URL(location.href);url.searchParams.delete("room");history.replaceState(null,"",url);const lobby=document.querySelector("#roomLobby");if(lobby)lobby.hidden=false;const roomMessage=document.querySelector("#roomMessage");if(roomMessage)roomMessage.textContent="このルームは満員です。別のルームIDで参加してください";}}
       }catch{}
     };
     gameSocket.onerror=()=>log("オンラインサーバーへの接続に失敗しました");
