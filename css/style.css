@@ -69,3 +69,6 @@
 .player.opponent .monsters{transform:translateY(10px)}
 
 .player .other .discard-zone>div{display:flex!important;justify-content:center!important;align-items:center!important;height:calc(100% - 14px)!important}
+
+.room-lobby[hidden]{display:none}
+.room-lobby{position:fixed;inset:0;background:rgba(0,0,0,.72);display:grid;place-items:center;z-index:300}.room-lobby-panel{width:min(360px,90vw);box-sizing:border-box;background:#202329;color:#eee;border:1px solid #555;border-radius:8px;padding:24px;box-shadow:0 12px 40px rgba(0,0,0,.7);text-align:center}.room-lobby-panel h2{margin:0 0 18px;font-size:20px}.room-lobby-panel button{width:100%;padding:9px;margin-top:8px;border:1px solid #555;border-radius:4px;background:#292d34;color:#fff;cursor:pointer}.room-lobby-panel input{width:100%;box-sizing:border-box;padding:9px;margin-top:8px;border:1px solid #555;border-radius:4px;background:#111;color:#fff;text-align:center;text-transform:uppercase}.room-or{margin:14px 0 2px;color:#aaa;font-size:12px}.room-message{margin-top:12px;color:#aaa;font-size:12px;line-height:1.5}#roomStatus{margin-left:auto;margin-right:16px;color:#aaa;font-size:12px}
