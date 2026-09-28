@@ -8,7 +8,7 @@ let applyingPublicState=false;
 
 function getPublicState(){
   const x=state.players[1];
-  return {life:x.life,handCount:x.hand.length,deckCount:x.deck.length,deckCounters:x.deckCounters||0,deckHorizontal:!!x.deckHorizontal,facedownCount:x.facedown.length,monsters:x.monsters,energy:x.energy,field:x.field,discard:x.discard,pendingDiscard:state.pendingDiscardPlayer===1,gameOver:state.gameOver||null};
+  return {life:x.life,handCount:x.hand.length,deckCount:x.deck.length,deckCounters:x.deckCounters||0,deckHorizontal:!!x.deckHorizontal,facedownCount:x.facedown.length,revealedHand:x.hand.filter(c=>c.revealed).map(c=>({id:c.id,name:c.name,faceUp:true,revealed:true})),facedownPublic:x.facedown.filter(c=>c.faceUp!==false),monsters:x.monsters,energy:x.energy,field:x.field,discard:x.discard,pendingDiscard:state.pendingDiscardPlayer===1,gameOver:state.gameOver||null};
 }
 function sendPublicState(){
   if(applyingPublicState||!onlinePlayerId||!gameSocket||gameSocket.readyState!==WebSocket.OPEN)return;
@@ -27,6 +27,7 @@ function applyPublicState(playerId,publicState){
   if(state.pendingDiscardPlayer!==1)state.pendingDiscardPlayer=publicState.pendingDiscard===true?2:null;
   const handCount=Number.isInteger(publicState.handCount)&&publicState.handCount>=0?publicState.handCount:0;
   x.hand=Array.from({length:handCount},(_,i)=>{const card=newCard("",playerId+"h"+i);card.faceUp=false;return card});
+  if(Array.isArray(publicState.revealedHand))publicState.revealedHand.forEach((card,i)=>{if(!card||typeof card.id!=="string")return;const target=x.hand.find(c=>c.id===card.id)||x.hand[i];if(!target)return;target.id=card.id;target.name=typeof card.name==="string"?card.name:"";target.faceUp=true;target.revealed=true});
   x.deckCounters=Number.isFinite(publicState.deckCounters)?publicState.deckCounters:0;
   x.deckHorizontal=!!publicState.deckHorizontal;
   x.monsters=Array.isArray(publicState.monsters)?publicState.monsters:[];
@@ -36,6 +37,7 @@ function applyPublicState(playerId,publicState){
   const deckCount=Number.isInteger(publicState.deckCount)&&publicState.deckCount>=0?publicState.deckCount:0;
   x.deck=Array.from({length:deckCount},(_,i)=>newCard("",playerId+"d"+i));
   x.facedown=Array.from({length:Math.max(0,Number(publicState.facedownCount)||0)},(_,i)=>{const card=newCard("",playerId+"f"+i);card.faceUp=false;return card});
+  if(Array.isArray(publicState.facedownPublic))publicState.facedownPublic.forEach(card=>{if(!card||typeof card.id!=="string")return;const target=x.facedown.find(c=>c.id===card.id)||x.facedown.find(c=>c.faceUp===false);if(!target)return;target.id=card.id;target.name=typeof card.name==="string"?card.name:"";target.faceUp=true});
 }
 
 function applyOnlinePlayers(players){
@@ -295,6 +297,7 @@ function selection(){
   if(s.z==="energy")destinations.splice(2,4);
   if(s.z==="monsters"){destinations.splice(2,1);destinations.splice(3,1)}
   for(const[z,label]of destinations)if(z!==s.z&&!(s.z==="monsters"&&z==="facedown"))add(label,()=>move(z));
+  if(s.z==="facedown")add("表向きにする",()=>{c.faceUp=true;c.revealed=false;state.selected={p:s.p,z:s.z,id:c.id};render()});
   if(s.z==="hand"){const spacer=document.createElement("div");spacer.style.height="12px";op.appendChild(spacer);if(c.revealed)add("公開をやめる",()=>{c.revealed=false;state.selected={p:s.p,z:s.z,id:c.id};render()});else add("相手に公開する",()=>{c.revealed=true;c.faceUp=true;state.selected={p:s.p,z:s.z,id:c.id};render()});add("手札を全て公開",()=>{state.players[1].hand.forEach(card=>{card.revealed=true;card.faceUp=true});state.selected={p:s.p,z:s.z,id:c.id};render();log("手札を全て公開しました")})}
 }
 function openMonsterAdjust(c){const modal=document.querySelector("#monsterAdjustModal"),input=document.querySelector("#monsterAdjustInput");modal.hidden=false;input.value="";input.focus();const close=()=>{modal.hidden=true};const apply=(action)=>{const raw=input.value.trim();if(!raw){close();return}const n=Number(raw);if(!Number.isInteger(n)){log("ダメージ／回復の変更をキャンセルしました");close();return}const amount=Math.abs(n);if(action==="cancel"){close();return}if(action==="damage")c.damage+=amount;if(action==="heal")c.damage=Math.max(0,c.damage-amount);if(action==="change")c.modification=amount+c.damage;state.selected={p:1,z:"monsters",id:c.id};render();close()};modal.querySelectorAll("[data-monster-action]").forEach(b=>b.onclick=()=>apply(b.dataset.monsterAction));input.onkeydown=ev=>{if(ev.key!=="Enter")return;ev.preventDefault();const raw=input.value.trim();if(!raw)return;const n=Number(raw);if(!Number.isInteger(n)){log("ダメージ／回復の変更をキャンセルしました");close();return}apply(n>0&&raw.startsWith("+")?"heal":"damage")}}
