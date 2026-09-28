@@ -2,6 +2,7 @@ const SERVER_WS_BASE="wss://card-game-server-dev.original-card-game-dev.workers.
 let currentRoom="";
 let gameSocket=null;
 let onlinePlayerId=null;
+let roomPlayerCount=0;
 let lastPublicState=null;
 let applyingPublicState=false;
 
@@ -109,6 +110,7 @@ function connectGameServer(){
         }
         else if(message.type==="log"){const text=message.playerId===onlinePlayerId?message.text:String(message.text||"").replaceAll("自分",state.players[2].name);log(text,false)}
         else if(message.type==="player_left"){log("対戦相手が退出しました",false)}
+        else if(message.type==="room_status"){roomPlayerCount=Number.isInteger(message.playerCount)?message.playerCount:0;render()}
         else if(message.type==="player_joined"||message.type==="player_names"){
           applyOnlinePlayers(message.players);
           render();
@@ -230,6 +232,8 @@ function render(){
     }
     revealedStatus.textContent=statusText;
   }
+  const firstButtons=document.querySelectorAll("[data-first]");
+  firstButtons.forEach(b=>{b.disabled=onlinePlayerId!==null&&roomPlayerCount<2});
   const turnName=state.players[state.turnPlayer].name;
   document.querySelector("#turnPlayer").textContent=turnName;
   const turnAreaLabel=document.querySelector("#turnAreaLabel");
