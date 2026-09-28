@@ -91,8 +91,7 @@ function connectGameServer(){
           const currentPlayer=message.previousTurnPlayer===onlinePlayerId?1:2;
           if(currentPlayer===1)state.players[1].monsters.forEach(m=>{m.damage=0});
           if(message.turnPlayer===onlinePlayerId)startTurn(1,false);
-          else render();
-          log("ターンが"+state.players[state.turnPlayer].name+"に移りました",false);
+          else {render();log("ターンが"+state.players[state.turnPlayer].name+"に移りました",false);}
         }
         else if(message.type==="error")log("オンラインサーバー: "+message.message);
       }catch{}
