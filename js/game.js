@@ -1,4 +1,5 @@
-const SERVER_WS_URL="wss://card-game-server-dev.original-card-game-dev.workers.dev/room/test";
+const SERVER_WS_BASE="wss://card-game-server-dev.original-card-game-dev.workers.dev";
+let currentRoom="";
 let gameSocket=null;
 let onlinePlayerId=null;
 let lastPublicState=null;
@@ -48,7 +49,32 @@ function applyOnlinePlayers(players){
   if(nameInput)nameInput.value=state.players[1].name;
 }
 
+function normalizeRoomCode(value){return String(value||"").trim().toUpperCase().replace(/[^A-Z0-9]/g,"").slice(0,6)}
+function createRoomCode(){const chars="ABCDEFGHJKLMNPQRSTUVWXYZ23456789";let code="";for(let i=0;i<6;i++)code+=chars[Math.floor(Math.random()*chars.length)];return code}
+function enterRoom(room){
+  const code=normalizeRoomCode(room);
+  if(code.length!==6){const m=document.querySelector("#roomMessage");if(m)m.textContent="6文字のルームIDを入力してください";return false}
+  currentRoom=code;
+  const url=new URL(location.href);url.searchParams.set("room",code);history.replaceState(null,"",url);
+  const lobby=document.querySelector("#roomLobby");if(lobby)lobby.hidden=true;
+  const status=document.querySelector("#roomStatus");if(status)status.textContent="ルーム: "+code;
+  connectGameServer();
+  return true;
+}
+function setupRoomLobby(){
+  const params=new URLSearchParams(location.search);
+  const room=normalizeRoomCode(params.get("room"));
+  if(room.length===6){currentRoom=room;const lobby=document.querySelector("#roomLobby");if(lobby)lobby.hidden=true;const status=document.querySelector("#roomStatus");if(status)status.textContent="ルーム: "+room;return true}
+  const lobby=document.querySelector("#roomLobby");if(lobby)lobby.hidden=false;
+  const create=document.querySelector("#roomCreate");if(create)create.onclick=()=>enterRoom(createRoomCode());
+  const input=document.querySelector("#roomInput");
+  const join=document.querySelector("#roomJoin");
+  if(join)join.onclick=()=>enterRoom(input?.value);
+  if(input)input.onkeydown=e=>{if(e.key==="Enter")enterRoom(input.value)};
+  return false;
+}
 function connectGameServer(){
+  if(!currentRoom)return;
   try{
     const key="originalCardGamePlayerToken";
     let playerToken=localStorage.getItem(key);
@@ -56,7 +82,7 @@ function connectGameServer(){
       playerToken=crypto.randomUUID();
       localStorage.setItem(key,playerToken);
     }
-    gameSocket=new WebSocket(SERVER_WS_URL+"?session="+encodeURIComponent(playerToken));
+    gameSocket=new WebSocket(SERVER_WS_BASE+"/room/"+encodeURIComponent(currentRoom)+"?session="+encodeURIComponent(playerToken));
     gameSocket.onopen=()=>log("オンラインサーバーに接続しました");
     gameSocket.onmessage=e=>{
       try{
@@ -345,6 +371,6 @@ async function start(){
   const p1=state.players[1];p1.deckList=defaultDeck.slice();const shuffledDeck=shuffle(defaultDeck.slice());p1.hand=shuffledDeck.slice(0,7).map((n,i)=>newCard(n,"p1h"+i));p1.deck=shuffledDeck.slice(7).map((n,i)=>newCard(n,"p1d"+i));state.savedDeck=defaultDeck.slice();
   loadLocalGameState();
   setup();render();log("カード画像を読み込みました（"+cardNames.length+"種類）");
-  connectGameServer();
+  if(setupRoomLobby())connectGameServer();
 }
 start().catch(e=>{console.error(e);document.querySelector("#log").textContent="カード一覧の読み込みに失敗しました。";});
