@@ -143,7 +143,7 @@ function connectGameServer(){
 }
 
 const MAX={hand:9,monsters:7,energy:18,field:1,facedown:3};
-const CARD_NAMES_URL="https://raw.githubusercontent.com/Omezi42/AnokoroImageFolder/main/all_card_names.txt";
+const CARD_NAMES_URL="all_card_names.txt";
 const CARD_IMAGE_BASE="https://raw.githubusercontent.com/Omezi42/AnokoroImageFolder/main/images/captured_cards/";
 const CROPPED_CARD_IMAGE_BASE="https://raw.githubusercontent.com/Omezi42/AnokoroImageFolder/main/images/cropped_cards/";
 
